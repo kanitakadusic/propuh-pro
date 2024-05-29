@@ -1,9 +1,11 @@
 from machine import Pin
 from time import ticks_ms, ticks_diff, sleep
+from FanSpeedController import FanMode
+from InterfaceMode import *
 
 mode_button = Pin(18, Pin.IN)
-increase_button = Pin(19, Pin.IN)
-decrease_button = Pin(16, Pin.IN)
+increase_temp_button = Pin(19, Pin.IN)
+decrease_temp_button = Pin(16, Pin.IN)
 fan_button = Pin(17, Pin.IN)
 
 
@@ -14,7 +16,6 @@ debounce = 0
 
 def debouncing():
     global debounce
-
     if ticks_diff(ticks_ms(), debounce) < DEBOUNCE_TIME_MS:
         return False
     else:
@@ -22,23 +23,8 @@ def debouncing():
         return True
 
 
-class InterfaceMode:
-    CONFIGURATION = 0
-    OPERATIONAL = 1
-    length = 2
-
-
-class FanMode:
-    OFF = 0
-    SLOW = 1
-    MEDIUM = 2
-    FAST = 3
-    AUTO = 4
-    length = 5
-
-
-current_fan_mode = FanMode.OFF
-current_mode = InterfaceMode.CONFIGURATION
+fan_mode = FanMode()
+interface_mode = InterfaceMode()
 current_temp = 0.0
 target_temp = 22.0
 
@@ -47,18 +33,22 @@ LIMIT = 0
 
 
 def print_configuration():
-    global current_fan_mode
+    global fan_mode
     global target_temp
 
     fan_output = ""
 
-    if current_fan_mode == FanMode.AUTO:
+    if fan_mode == FanMode.AUTO:
         fan_output = "AUTO"
     else:
-        for i in range(current_fan_mode):
-            fan_output += "#"
-        for i in range(FanMode.length - current_fan_mode - 2):
-            fan_output += "O"
+        mode_outputs = {
+            FanMode.OFF: "OOO",
+            FanMode.SLOW: "#OO",
+            FanMode.MEDIUM: "##O",
+            FanMode.FAST: "###",
+            FanMode.AUTO: "AUTO",
+        }
+        fan_output = mode_outputs.get(fan_mode.current_mode, "UNKNOWN")
 
     print()
     print()
@@ -67,10 +57,10 @@ def print_configuration():
 
 
 def change_mode(pin):
-    global current_mode
+    global interface_mode
     if debouncing() == False:
         return
-    current_mode = (current_mode + 1) % InterfaceMode.length
+    interface_mode.switch()
     print_configuration()
 
 
@@ -91,16 +81,16 @@ def decrease_temp(pin):
 
 
 def change_fan_speed(pin):
-    global current_fan_mode
+    global fan_mode
     if debouncing() == False:
         return
-    current_fan_mode = (current_fan_mode + 1) % FanMode.length
+    fan_mode.next()
     print_configuration()
 
 
 mode_button.irq(handler=change_mode, trigger=Pin.IRQ_RISING)
-increase_button.irq(handler=increase_temp, trigger=Pin.IRQ_RISING)
-decrease_button.irq(handler=decrease_temp, trigger=Pin.IRQ_RISING)
+increase_temp_button.irq(handler=increase_temp, trigger=Pin.IRQ_RISING)
+decrease_temp_button.irq(handler=decrease_temp, trigger=Pin.IRQ_RISING)
 fan_button.irq(handler=change_fan_speed, trigger=Pin.IRQ_RISING)
 
 
