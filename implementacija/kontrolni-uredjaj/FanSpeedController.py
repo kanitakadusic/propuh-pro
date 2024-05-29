@@ -63,4 +63,5 @@ class FanSpeedController:
         return 1 / 3 * self.fan_mode.get_current_mode()
 
     def get_speed_u16(self, current_temp):
-        return (2**16 - 1) * self.get_speed_percent(current_temp)
+        U16 = 2**16 - 1
+        return U16 * self.get_speed_percent(current_temp)
