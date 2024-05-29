@@ -13,7 +13,6 @@ DEBOUNCE_TIME_MS = 300
 
 debounce = 0
 
-
 def debouncing():
     global debounce
     if ticks_diff(ticks_ms(), debounce) < DEBOUNCE_TIME_MS:
@@ -34,7 +33,6 @@ LIMIT = 0
 
 
 def print_configuration():
-
     fan_output = ""
 
     if fan_mode == FanMode.AUTO:
