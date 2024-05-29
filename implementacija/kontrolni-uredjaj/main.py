@@ -35,7 +35,7 @@ LIMIT = 0
 
 def debouncing():
     global debounce
-    if ticks_diff(ticks_ms(), debounce) < 100:
+    if ticks_diff(ticks_ms(), debounce) < 300:
         return False
     else:
         debounce = ticks_ms()
@@ -80,6 +80,4 @@ decrease_button.irq(handler=decrease_temp, trigger=Pin.IRQ_RISING)
 fan_button.irq(handler=change_fan_speed, trigger=Pin.IRQ_RISING)
 
 while True:
-    print("a")
-    sleep(0.1)
     pass
