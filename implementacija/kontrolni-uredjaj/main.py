@@ -1,4 +1,4 @@
-from machine import Pin
+from machine import Pin, I2C
 from time import ticks_ms, ticks_diff
 from FanSpeedController import *
 from InterfaceMode import *
@@ -10,11 +10,9 @@ increase_button = Pin(19, Pin.IN)
 decrease_button = Pin(16, Pin.IN)
 
 
-# ZA DISPLAY:
-DISPLAY_VCC = Pin(9, Pin.OUT).on()
-
 DEBOUNCE_TIME_MS = 300
 debounce = 0
+
 
 def debouncing():
     global debounce
