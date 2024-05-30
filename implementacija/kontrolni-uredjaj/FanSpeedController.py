@@ -28,7 +28,7 @@ class FanMode:
             )
 
         self.current_mode = starting_mode
-        self.length = 5
+        self.length = len(self.VALID_MODES)
 
     def next(self):
         self.current_mode = (self.current_mode + 1) % self.length

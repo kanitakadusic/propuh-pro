@@ -21,8 +21,8 @@ class InterfaceMode:
                 f"Invalid starting mode: {starting_mode}. Must be one of {InterfaceMode.MODE_NAMES}."
             )
 
-        self.current_mode = InterfaceMode.TARGET_TEMP_CONFIG
-        self.length = 3
+        self.current_mode = starting_mode
+        self.length = len(self.VALID_MODES)
 
     def next(self):
         self.current_mode = (self.current_mode + 1) % self.length
