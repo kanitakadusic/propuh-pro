@@ -7,4 +7,4 @@ Sistem se sastoji iz dva dijela - kontrolnog i terenskog podsistema. Terenski di
 
 Sistem primjenu može naći kako u stambenim i ugostiteljskim objektima u vidu ventilacije prostora boravka, tako i u industrijskim okruženjima gdje je potrebno nadzirati temperaturu prostora ili uređaja koji nije neposredno dostupan.
 
-Pored kontrolnog uređaja, sistemom je moguće upravaljati i nadzirati ga i putem mobline aplikacije.
+Pored kontrolnog uređaja, sistemom je moguće upravljati i nadzirati ga i putem mobilne aplikacije.
