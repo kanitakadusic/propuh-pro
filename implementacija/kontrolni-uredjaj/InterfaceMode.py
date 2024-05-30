@@ -11,13 +11,14 @@ class InterfaceMode:
         OPERATIONAL: "OPERATION",
     }
 
+    VALID_MODES = {
+        TARGET_TEMP_CONFIG,
+        CRITICAL_TEMP_CONFIG,
+        FAN_CONFIG,
+        OPERATIONAL,
+    }
+
     def __init__(self, starting_mode=TARGET_TEMP_CONFIG):
-        self.VALID_MODES = {
-            InterfaceMode.TARGET_TEMP_CONFIG,
-            InterfaceMode.CRITICAL_TEMP_CONFIG,
-            InterfaceMode.FAN_CONFIG,
-            InterfaceMode.OPERATIONAL,
-        }
 
         if starting_mode not in self.VALID_MODES:
             raise ValueError(
