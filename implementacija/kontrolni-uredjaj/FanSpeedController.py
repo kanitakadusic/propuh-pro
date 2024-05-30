@@ -33,6 +33,9 @@ class FanMode:
     def next(self):
         self.current_mode = (self.current_mode + 1) % self.length
 
+    def previous(self):
+        self.current_mode = (self.current_mode - 1) % self.length
+
     def get_mode(self):
         return self.current_mode
 
