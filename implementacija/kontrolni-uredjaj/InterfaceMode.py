@@ -1,11 +1,13 @@
 class InterfaceMode:
     TARGET_TEMP_CONFIG = 0
     CRITICAL_TEMP_CONFIG = 1
-    OPERATIONAL = 2
+    FAN_CONFIG = 2
+    OPERATIONAL = 3
 
     MODE_NAMES = {
         TARGET_TEMP_CONFIG: "TARGET_TEMP_CONFIG",
         CRITICAL_TEMP_CONFIG: "CRITICAL_TEMP_CONFIG",
+        FAN_CONFIG: "FAN_CONFIG",
         OPERATIONAL: "OPERATION",
     }
 
@@ -13,6 +15,7 @@ class InterfaceMode:
         self.VALID_MODES = {
             InterfaceMode.TARGET_TEMP_CONFIG,
             InterfaceMode.CRITICAL_TEMP_CONFIG,
+            InterfaceMode.FAN_CONFIG,
             InterfaceMode.OPERATIONAL,
         }
 
@@ -26,6 +29,9 @@ class InterfaceMode:
 
     def next(self):
         self.current_mode = (self.current_mode + 1) % self.length
+
+    def previous(self):
+        self.current_mode = (self.current_mode - 1) % self.length
 
     def get_mode(self):
         return self.current_mode
