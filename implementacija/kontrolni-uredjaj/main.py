@@ -2,12 +2,16 @@ from machine import Pin
 from time import ticks_ms, ticks_diff
 from FanSpeedController import *
 from InterfaceMode import *
+from LCD import *
 
 next_mode_button = Pin(18, Pin.IN)
 previous_mode_button = Pin(17, Pin.IN)
 increase_button = Pin(19, Pin.IN)
 decrease_button = Pin(16, Pin.IN)
 
+
+# ZA DISPLAY:
+DISPLAY_VCC = Pin(9, Pin.OUT).on()
 
 DEBOUNCE_TIME_MS = 300
 debounce = 0
