@@ -2,7 +2,7 @@ from machine import Pin
 from time import ticks_ms, ticks_diff
 from FanSpeedController import *
 from InterfaceMode import *
-from LCD import *
+from lcd1602 import *
 
 next_mode_button = Pin(18, Pin.IN)
 previous_mode_button = Pin(17, Pin.IN)
