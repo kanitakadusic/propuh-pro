@@ -60,6 +60,9 @@ class FanSpeedController:
     def set_target_temp(self, new_target_temp):
         self.target_temp = new_target_temp
 
+    def set_critical_temp(self, new_critical_temp):
+        self.target_temp = new_critical_temp
+
     def get_speed_percent(self, current_temp):
         if self.fan_mode == FanMode.AUTO:
             return 0.0  # TODO: Osmisliti proracun za AUTO mod
