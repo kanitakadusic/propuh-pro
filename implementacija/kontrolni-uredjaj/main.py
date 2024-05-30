@@ -1,6 +1,6 @@
 from machine import Pin
 from time import ticks_ms, ticks_diff
-from FanSpeedController import FanMode
+from FanSpeedController import *
 from InterfaceMode import *
 
 next_mode_button = Pin(18, Pin.IN)
