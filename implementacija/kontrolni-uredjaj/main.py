@@ -1,5 +1,5 @@
 from machine import Pin
-from time import ticks_ms, ticks_diff, sleep
+from time import ticks_ms, ticks_diff
 from FanSpeedController import FanMode
 from InterfaceMode import *
 
@@ -89,9 +89,9 @@ def increase_value(pin):
 
     if interface_mode.get_mode() == InterfaceMode.TARGET_TEMP_CONFIG:
         target_temp += 0.5
-    if interface_mode.get_mode() == InterfaceMode.CRITICAL_TEMP_CONFIG:
+    elif interface_mode.get_mode() == InterfaceMode.CRITICAL_TEMP_CONFIG:
         critical_temp += 0.5
-    if interface_mode.get_mode() == InterfaceMode.FAN_CONFIG:
+    elif interface_mode.get_mode() == InterfaceMode.FAN_CONFIG:
         fan_mode.next()
 
     print_configuration()
@@ -106,9 +106,9 @@ def decrease_value(pin):
 
     if interface_mode.get_mode() == InterfaceMode.TARGET_TEMP_CONFIG:
         target_temp -= 0.5
-    if interface_mode.get_mode() == InterfaceMode.CRITICAL_TEMP_CONFIG:
+    elif interface_mode.get_mode() == InterfaceMode.CRITICAL_TEMP_CONFIG:
         critical_temp -= 0.5
-    if interface_mode.get_mode() == InterfaceMode.FAN_CONFIG:
+    elif interface_mode.get_mode() == InterfaceMode.FAN_CONFIG:
         fan_mode.previous()
 
     print_configuration()
