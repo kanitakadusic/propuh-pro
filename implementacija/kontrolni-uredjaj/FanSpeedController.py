@@ -45,8 +45,9 @@ class FanMode:
 
 class FanSpeedController:
 
-    def __init__(self, target_temp, fan_mode=FanMode(FanMode.AUTO)):
+    def __init__(self, target_temp, critical_temp, fan_mode=FanMode(FanMode.AUTO)):
         self.target_temp = target_temp
+        self.critical_temp = critical_temp
         self.fan_mode = fan_mode
         self.current_speed = 0
 
@@ -61,7 +62,7 @@ class FanSpeedController:
 
     def get_speed_percent(self, current_temp):
         if self.fan_mode == FanMode.AUTO:
-            return 0.0 # TODO: Osmisliti proracun za AUTO mod
+            return 0.0  # TODO: Osmisliti proracun za AUTO mod
 
         return 1 / 3 * self.fan_mode.get_mode()
 
