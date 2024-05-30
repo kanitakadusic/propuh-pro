@@ -13,7 +13,6 @@ DEBOUNCE_TIME_MS = 300
 
 debounce = 0
 
-
 def debouncing():
     global debounce
     if ticks_diff(ticks_ms(), debounce) < DEBOUNCE_TIME_MS:
@@ -27,15 +26,13 @@ fan_mode = FanMode()
 interface_mode = InterfaceMode()
 current_temp = 0.0
 target_temp = 22.0
+critical_temp = 35.0
 
 STEP = 0
 LIMIT = 0
 
 
 def print_configuration():
-    global fan_mode
-    global target_temp
-
     fan_output = ""
 
     if fan_mode == FanMode.AUTO:
@@ -52,39 +49,68 @@ def print_configuration():
 
     print()
     print()
-    print("Target temp:", target_temp)
-    print("Fan speed:", fan_output)
+    print("Mode:", interface_mode.get_mode_name())
+
+    current_mode = interface_mode.get_mode()
+
+    if current_mode == InterfaceMode.TARGET_TEMP_CONFIG:
+        print("Target temp:", target_temp)
+        print("Fan speed:", fan_output)
+
+    elif current_mode == InterfaceMode.CRITICAL_TEMP_CONFIG:
+        print("Critical temp:", critical_temp)
+
+    else:
+        print("Current temp:", current_temp)
 
 
 def change_mode(pin):
-    global interface_mode
+
     if debouncing() == False:
         return
-    interface_mode.switch()
+
+    interface_mode.next()
     print_configuration()
 
 
 def increase_temp(pin):
     global target_temp
+    global critical_temp
+
     if debouncing() == False:
         return
-    target_temp += 0.5  # dodati granice
+
+    if interface_mode.get_mode() == InterfaceMode.TARGET_TEMP_CONFIG:
+        target_temp += 0.5
+    if interface_mode.get_mode() == InterfaceMode.CRITICAL_TEMP_CONFIG:
+        critical_temp += 0.5
+
     print_configuration()
 
 
 def decrease_temp(pin):
     global target_temp
+    global critical_temp
+
     if debouncing() == False:
         return
-    target_temp -= 0.5  # dodati granice
+
+    if interface_mode.get_mode() == InterfaceMode.TARGET_TEMP_CONFIG:
+        target_temp -= 0.5
+    if interface_mode.get_mode() == InterfaceMode.CRITICAL_TEMP_CONFIG:
+        critical_temp -= 0.5
+
     print_configuration()
 
 
 def change_fan_speed(pin):
-    global fan_mode
+
     if debouncing() == False:
         return
-    fan_mode.next()
+
+    if interface_mode.get_mode() == InterfaceMode.TARGET_TEMP_CONFIG:
+        fan_mode.next()
+
     print_configuration()
 
 

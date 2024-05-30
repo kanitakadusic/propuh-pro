@@ -1,26 +1,34 @@
 class InterfaceMode:
-    CONFIGURATION = 0
-    OPERATIONAL = 1
+    TARGET_TEMP_CONFIG = 0
+    CRITICAL_TEMP_CONFIG = 1
+    OPERATIONAL = 2
 
     MODE_NAMES = {
-            CONFIGURATION: "CONFIGURATION",
-            OPERATIONAL: "OPERATION"
+        TARGET_TEMP_CONFIG: "TARGET_TEMP_CONFIG",
+        CRITICAL_TEMP_CONFIG: "CRITICAL_TEMP_CONFIG",
+        OPERATIONAL: "OPERATION",
+    }
+
+    def __init__(self, starting_mode=TARGET_TEMP_CONFIG):
+        self.VALID_MODES = {
+            InterfaceMode.TARGET_TEMP_CONFIG,
+            InterfaceMode.CRITICAL_TEMP_CONFIG,
+            InterfaceMode.OPERATIONAL,
         }
 
-    def __init__(self, starting_mode = CONFIGURATION):
-        self.VALID_MODES = {InterfaceMode.CONFIGURATION, InterfaceMode.OPERATIONAL}
-
         if starting_mode not in self.VALID_MODES:
-            raise ValueError(f"Invalid starting mode: {starting_mode}. Must be one of {InterfaceMode.MODE_NAMES}.")
+            raise ValueError(
+                f"Invalid starting mode: {starting_mode}. Must be one of {InterfaceMode.MODE_NAMES}."
+            )
 
-        self.current_mode = InterfaceMode.CONFIGURATION
-        self.length = 2
+        self.current_mode = starting_mode
+        self.length = len(self.VALID_MODES)
 
-    def switch(self):
+    def next(self):
         self.current_mode = (self.current_mode + 1) % self.length
 
-    def get_current_mode(self):
+    def get_mode(self):
         return self.current_mode
-    
+
     def get_mode_name(self):
         return InterfaceMode.MODE_NAMES.get(self.current_mode, "UNKNOWN")

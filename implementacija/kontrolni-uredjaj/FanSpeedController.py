@@ -28,12 +28,12 @@ class FanMode:
             )
 
         self.current_mode = starting_mode
-        self.length = 5
+        self.length = len(self.VALID_MODES)
 
     def next(self):
         self.current_mode = (self.current_mode + 1) % self.length
 
-    def get_current_mode(self):
+    def get_mode(self):
         return self.current_mode
 
     def get_mode_name(self):
@@ -60,7 +60,7 @@ class FanSpeedController:
         if self.fan_mode == FanMode.AUTO:
             return 0.0 # TODO: Osmisliti proracun za AUTO mod
 
-        return 1 / 3 * self.fan_mode.get_current_mode()
+        return 1 / 3 * self.fan_mode.get_mode()
 
     def get_speed_u16(self, current_temp):
         U16 = 2**16 - 1
