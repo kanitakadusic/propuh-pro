@@ -1,7 +1,10 @@
-from machine import Pin
+from machine import Pin, I2C
 from time import ticks_ms, ticks_diff
 from FanSpeedController import *
 from InterfaceMode import *
+from utime import sleep
+from lcd_api import LcdApi
+from pico_i2c_lcd import I2cLcd
 
 next_mode_button = Pin(18, Pin.IN)
 previous_mode_button = Pin(17, Pin.IN)
@@ -11,6 +14,18 @@ decrease_button = Pin(16, Pin.IN)
 
 DEBOUNCE_TIME_MS = 300
 debounce = 0
+
+
+# TODO: Mozda ekstraktovati
+
+# Konfiguracija za displej
+I2C_ADDR = 0x27
+I2C_NUM_ROWS = 2
+I2C_NUM_COLS = 16
+
+i2c = I2C(0, sda=Pin(0), scl=Pin(1), freq=400000)
+lcd = I2cLcd(i2c, I2C_ADDR, I2C_NUM_ROWS, I2C_NUM_COLS)
+
 
 def debouncing():
     global debounce
@@ -50,16 +65,28 @@ def print_configuration():
     current_mode = interface_mode.get_mode()
 
     if current_mode == InterfaceMode.TARGET_TEMP_CONFIG:
-        print("Target temp:", target_temp)
+        output = "Target temp:\n" + str(target_temp) + chr(223) + "C"
+        print(output)
+        lcd.clear()
+        lcd.putstr(output)
 
     elif current_mode == InterfaceMode.CRITICAL_TEMP_CONFIG:
-        print("Critical temp:", critical_temp)
+        output = "Critical temp:\n" + str(critical_temp) + chr(223) + "C"
+        print(output)
+        lcd.clear()
+        lcd.putstr(output)
 
     elif current_mode == InterfaceMode.FAN_CONFIG:
-        print("Fan speed:", fan_output)
+        output = "Fan speed:\n" + str(fan_output)
+        print(output)
+        lcd.clear()
+        lcd.putstr(output)
 
     else:
-        print("Current temp:", current_temp)
+        output = "Current temp:\n" + str(current_temp) + chr(223) + "C"
+        print(output)
+        lcd.clear()
+        lcd.putstr(output)
 
 
 def next_mode(pin):
