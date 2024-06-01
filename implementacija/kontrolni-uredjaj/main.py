@@ -201,13 +201,16 @@ def send_data(t):
     publish = str(critical_temp)
     client.publish(mqtt_topic_critical_temp, publish)
     
-    client.check_msg()
+    
     
     print("Sent!")
     
 
 t = Timer(period=10000, callback=send_data, mode=Timer.PERIODIC)
 
+
 while True:
+    client.check_msg()
+    sleep(0.5)
     pass
 
