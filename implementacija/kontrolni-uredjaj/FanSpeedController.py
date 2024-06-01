@@ -13,14 +13,15 @@ class FanMode:
         AUTO: "AUTO",
     }
 
+    VALID_MODES = {
+        OFF,
+        SLOW,
+        MEDIUM,
+        FAST,
+        AUTO,
+    }
+
     def __init__(self, starting_mode=OFF):
-        self.VALID_MODES = {
-            FanMode.OFF,
-            FanMode.SLOW,
-            FanMode.MEDIUM,
-            FanMode.FAST,
-            FanMode.AUTO,
-        }
 
         if starting_mode not in self.VALID_MODES:
             raise ValueError(
@@ -45,8 +46,9 @@ class FanMode:
 
 class FanSpeedController:
 
-    def __init__(self, target_temp, fan_mode=FanMode(FanMode.AUTO)):
+    def __init__(self, target_temp, critical_temp, fan_mode=FanMode(FanMode.AUTO)):
         self.target_temp = target_temp
+        self.critical_temp = critical_temp
         self.fan_mode = fan_mode
         self.current_speed = 0
 
@@ -59,11 +61,19 @@ class FanSpeedController:
     def set_target_temp(self, new_target_temp):
         self.target_temp = new_target_temp
 
+    def set_critical_temp(self, new_critical_temp):
+        self.target_temp = new_critical_temp
+
     def get_speed_percent(self, current_temp):
         if self.fan_mode == FanMode.AUTO:
-            return 0.0 # TODO: Osmisliti proracun za AUTO mod
+            return 0.0  # TODO: Osmisliti proracun za AUTO mod
+        # Mozda neka eksponencijalna skala
+        # ili eksponencijalno do 50% opsega temperatrue
+        # pa logaritamski do 90% opsega
 
-        return 1 / 3 * self.fan_mode.get_mode()
+        return self.fan_mode.get_mode() / len(
+            FanMode.VALID_MODES
+        )  # Ovo mozda prepraviti
 
     def get_speed_u16(self, current_temp):
         U16 = 2**16 - 1
