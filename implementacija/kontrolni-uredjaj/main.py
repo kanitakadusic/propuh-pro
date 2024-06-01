@@ -1,10 +1,38 @@
-from machine import Pin, I2C
+from machine import Pin, I2C, Timer
 from time import ticks_ms, ticks_diff
 from FanSpeedController import *
 from InterfaceMode import *
 from utime import sleep
 from lcd_api import LcdApi
 from pico_i2c_lcd import I2cLcd
+import network
+import simple
+
+# WiFi configuration
+wifi_ssid = "Edge 40 Neo - Haris"
+wifi_password = "nope1234"
+
+# MQTT configuration
+mqtt_server = "broker.hivemq.com"
+mqtt_topic_target_temp = b"Propuh-Pro/target_temp"
+mqtt_topic_critical_temp = b"Propuh-Pro/critical_temp"
+mqtt_topic_fan_mode = b"Propuh-Pro/fan_mode"
+mqtt_topic_measured_temp = b"Propuh-Pro/measured_temp"
+
+mqtt_client_name = "Propuh-Pro"
+
+# Initialize network
+print("Connecting to WiFi: ", wifi_ssid)
+wifi = network.WLAN(network.STA_IF)
+wifi.active(True)
+wifi.connect(wifi_ssid, wifi_password)
+
+# Wait until connected
+while not wifi.isconnected():
+    pass
+
+print("Connected to network!")
+print("IP address:", wifi.ifconfig()[0])
 
 next_mode_button = Pin(18, Pin.IN)
 previous_mode_button = Pin(17, Pin.IN)
@@ -148,5 +176,36 @@ previous_mode_button.irq(handler=previous_mode, trigger=Pin.IRQ_RISING)
 
 
 print_configuration()
+
+def message_arrived_measured_temp(topic, msg):
+    global current_temp
+    print("Message arrived on topic:", topic)
+    print("Payload:", msg)
+    current_temp = float(msg)
+
+# Connect to MQTT broker
+client = simple.MQTTClient(client_id=mqtt_client_name, server=mqtt_server, port=1883)
+client.connect()
+
+client.set_callback(message_arrived_measured_temp)
+client.subscribe(mqtt_topic_measured_temp)
+
+def send_data(t):
+    publish = str(fan_mode)
+    buf = '{{"Fan": \n{}}}'.format(publish)
+    client.publish(mqtt_topic_fan_mode, buf)
+
+    publish = str(target_temp)
+    buf = '{{"Target temp": \n{}}}'.format(publish)
+    client.publish(mqtt_topic_target_temp, buf)
+
+    publish = str(critical_temp)
+    buf = '{{"Critical temp: ": \n{}}}'.format(publish)
+    client.publish(mqtt_topic_critical_temp, buf)
+    
+
+t = Timer(period=10000, callback=send_data, mode=Timer.PERIODIC)
+
 while True:
     pass
+
