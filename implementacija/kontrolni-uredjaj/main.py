@@ -19,7 +19,7 @@ mqtt_topic_critical_temp = b"Propuh-Pro/critical_temp"
 mqtt_topic_fan_mode = b"Propuh-Pro/fan_mode"
 mqtt_topic_measured_temp = b"Propuh-Pro/measured_temp"
 
-mqtt_client_name = "Propuh-Pro"
+mqtt_client_name = "Propuh-Pro-Control"
 
 # Initialize network
 print("Connecting to WiFi: ", wifi_ssid)
@@ -182,6 +182,7 @@ def message_arrived_measured_temp(topic, msg):
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
     current_temp = float(msg)
+    print_configuration()
 
 # Connect to MQTT broker
 client = simple.MQTTClient(client_id=mqtt_client_name, server=mqtt_server, port=1883)
@@ -191,17 +192,18 @@ client.set_callback(message_arrived_measured_temp)
 client.subscribe(mqtt_topic_measured_temp)
 
 def send_data(t):
-    publish = str(fan_mode)
-    buf = '{{"Fan": \n{}}}'.format(publish)
-    client.publish(mqtt_topic_fan_mode, buf)
+    publish = str(fan_mode.get_mode())
+    client.publish(mqtt_topic_fan_mode, publish)
 
     publish = str(target_temp)
-    buf = '{{"Target temp": \n{}}}'.format(publish)
-    client.publish(mqtt_topic_target_temp, buf)
+    client.publish(mqtt_topic_target_temp, publish)
 
     publish = str(critical_temp)
-    buf = '{{"Critical temp: ": \n{}}}'.format(publish)
-    client.publish(mqtt_topic_critical_temp, buf)
+    client.publish(mqtt_topic_critical_temp, publish)
+    
+    client.check_msg()
+    
+    print("Sent!")
     
 
 t = Timer(period=10000, callback=send_data, mode=Timer.PERIODIC)
