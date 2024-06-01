@@ -1,4 +1,5 @@
 from machine import Pin, PWM, ADC, Timer
+from time import sleep
 from FanSpeedController import *
 import network
 import simple
@@ -121,4 +122,5 @@ client.subscribe(mqtt_topic_target_temp)
 
 
 while True:
-    pass
+    client.check_msg()
+    sleep(5)
