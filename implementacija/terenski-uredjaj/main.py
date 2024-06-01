@@ -10,8 +10,8 @@ from BusOut  import *
 fan_vu_metar_leds = BusOut([4, 5, 6, 7, 8, 9]) # Tacno za picoETF
 
 # WiFi configuration
-wifi_ssid = "Edge 40 Neo - Haris"
-wifi_password = "nope1234"
+wifi_ssid = "mirza"
+wifi_password = "zakadiju"
 
 # MQTT configuration
 mqtt_server = "broker.hivemq.com"
@@ -20,7 +20,7 @@ mqtt_topic_critical_temp = b"Propuh-Pro/critical_temp"
 mqtt_topic_fan_mode = b"Propuh-Pro/fan_mode"
 mqtt_topic_measured_temp = b"Propuh-Pro/measured_temp"
 
-mqtt_client_name = "Propuh-Pro"
+mqtt_client_name = "Propuh-Pro-Teren"
 
 # Initialize network
 print("Connecting to WiFi: ", wifi_ssid)
@@ -66,11 +66,11 @@ def check_temperature(t):
         print("temperature=", measured_temp)
 
         publish = str(measured_temp)
-        buf = '{{"Measured temp": \n{}}}'.format(publish)
-        client.publish(mqtt_topic_measured_temp, buf)
-        temperature = 0
+        buf = '{{"Measured temp":{}}}'.format(publish)
+        client.publish(mqtt_topic_measured_temp, publish)
+        temp_sum = 0
 
-tim = Timer(period = 3000, mode = Timer.PERIODIC, callback = check_temperature)
+tim = Timer(period = 500, mode = Timer.PERIODIC, callback = check_temperature)
 
 def update_vu_meter(duty_u16): #TODO: Implementirati
     pass 
