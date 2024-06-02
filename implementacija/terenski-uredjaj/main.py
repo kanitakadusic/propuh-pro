@@ -8,8 +8,6 @@ from BusOut  import *
 #TODO:  DHT11 - https://www.upesy.com/blogs/tutorials/use-dht11-humidity-temperature-sensor-on-pi-pico-with-micro-python-script 
 #       Although it is straightforward, this tool is limited in speed, as it can only measure once per second.
 
-fan_vu_metar_leds = BusOut([4, 5, 6, 7, 8, 9]) # Tacno za picoETF
-
 # WiFi configuration
 wifi_ssid = "mirza"
 wifi_password = "zakadiju"
@@ -38,55 +36,63 @@ print("IP address:", wifi.ifconfig()[0])
 
 
 
+fan_vu_meter_leds = BusOut([4, 5, 6, 7, 8, 9]) # Tacno za picoETF
 
 overheating_led = Pin(11, Pin.OUT) #TODO: Treba da blinka ako je izmjerena temperatura >= kriticne temperature 
 
-#fan_pwm = PWM(Pin(1)) #TODO: OVO JE PROIZVOLJNO - provjeriti koji Pin se zapravo moze koristiti
-#fan_pwm.freq(500)
+fan_pwm = PWM(Pin(22)) #TODO: OVO JE PROIZVOLJNO - provjeriti koji Pin se zapravo moze koristiti
+fan_pwm.freq(500)
 
 
-sensor_pin = ADC(Pin(27))
+sensor_pin = ADC(Pin(28))
 counter = 0
 temp_sum = 0
 measured_temp = 0
-fan_controller = FanSpeedController(0, 0, FanMode())
+fan_controller = FanSpeedController(20,30,22)
+fan_controller.set_current_temp(22)
 
 CALIBRATION_OFFSET = -1790
 
 def check_temperature(t):
-    global sensor_pin, counter, temp_sum, measured_temp, CALIBRATION_OFFSET
+    global sensor_pin, counter, temp_sum, measured_temp, CALIBRATION_OFFSET, fan_controller
     
     voltage = ((sensor_pin.read_u16() + CALIBRATION_OFFSET) / 65535) * 3.3
-    print("voltage:",voltage)
+    #print("voltage:",voltage)
     temp_sum += round(voltage * 100,1)
     #print("temp=",temp)
     counter += 1
     if counter == 10:
         measured_temp = temp_sum / 10
         counter = 0
-        print("temperature=", measured_temp)
-
-        publish = str(measured_temp)
-        buf = '{{"Measured temp":{}}}'.format(publish)
-        client.publish(mqtt_topic_measured_temp, publish)
         temp_sum = 0
+        print("temperature=", measured_temp)
+        fan_controller.set_current_temp(measured_temp)
+        speed = int(fan_controller.get_speed_u16())
+        light = int(fan_controller.get_speed_binary())
+        set_fan_speed(speed)
+        update_vu_meter(light)
+        print("brzina=",fan_controller.get_speed_u16())
+        publish = str(measured_temp)
+        client.publish(mqtt_topic_measured_temp, publish)
 
 tim = Timer(period = 500, mode = Timer.PERIODIC, callback = check_temperature)
 
-def update_vu_meter(duty_u16): #TODO: Implementirati
-    pass 
-
+def update_vu_meter(binary_number): #TODO: Implementirati
+    global fan_vu_meter_leds
+    fan_vu_meter_leds.set_value(binary_number)
+     
 def set_fan_speed(duty_u16):
-    pass
-    #fan_pwm.duty_u16(duty_u16)
+    fan_pwm.duty_u16(duty_u16)
 
 def message_arrived_fan_mode(topic, msg):
     global fan_controller
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
-    fan_controller.set_mode(int(float(msg)))
-    set_fan_speed(fan_controller.get_speed_u16)
-    update_vu_meter()
+    fan_controller.set_mode(FanMode(int(float(msg))))
+    speed = int(fan_controller.get_speed_u16())
+    light = int(fan_controller.get_speed_binary())
+    set_fan_speed(speed)
+    update_vu_meter(light)
 
 
 def message_arrived_critical_temp(topic, msg):
@@ -94,14 +100,20 @@ def message_arrived_critical_temp(topic, msg):
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
     fan_controller.set_critical_temp(float(msg))
-    set_fan_speed(fan_controller.get_speed_u16)
+    speed = int(fan_controller.get_speed_u16())
+    light = int(fan_controller.get_speed_binary())
+    set_fan_speed(speed)
+    update_vu_meter(light)
 
 def message_arrived_target_temp(topic, msg):
     global fan_controller
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
     fan_controller.set_target_temp(float(msg))
-    set_fan_speed(fan_controller.get_speed_u16)
+    speed = int(fan_controller.get_speed_u16())
+    light = int(fan_controller.get_speed_binary())
+    set_fan_speed(speed)
+    update_vu_meter(light)
 
 def custom_dispatcher(topic, msg):
     if topic == mqtt_topic_fan_mode:
@@ -121,9 +133,8 @@ client.subscribe(mqtt_topic_fan_mode)
 client.subscribe(mqtt_topic_critical_temp)
 client.subscribe(mqtt_topic_target_temp)
 
-
 while True:
     client.check_msg()
     client.check_msg()
     client.check_msg()
-    sleep(5)
+    sleep(1)
