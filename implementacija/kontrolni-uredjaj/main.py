@@ -25,7 +25,7 @@ MQTT_CLIENT_NAME = "Propuh-Pro-Control"
 print("Connecting to WiFi: ", WIFI_SSID)
 WIFI = network.WLAN(network.STA_IF)
 WIFI.active(True)
-WIFI.config(pm = 0xa11140) # Disable powersave mode
+WIFI.config(pm=0xA11140)  # Disable powersave mode
 WIFI.connect(WIFI_SSID, WIFI_PASSWORD)
 
 # Wait until connected
@@ -175,7 +175,12 @@ def print_configuration():
         LCD_DISPLAY.putstr(output)
 
     else:
-        output = "Current temp:\n" + str(current_temp) + chr(223) + "C"
+        output = (
+            "Current temp:\n"
+            + str(round_to_nearest_half(current_temp))
+            + chr(223)
+            + "C"
+        )
         print(output)
         LCD_DISPLAY.clear()
         LCD_DISPLAY.putstr(output)
@@ -219,6 +224,10 @@ def recive_data(timer):
 
 SEND_DATA_TIMER = Timer(period=5000, mode=Timer.PERIODIC, callback=send_data)
 RECIVE_DATA_TIMER = Timer(period=500, mode=Timer.PERIODIC, callback=recive_data)
+
+
+def round_to_nearest_half(value) -> float:
+    return round(value * 2) / 2
 
 
 while True:
