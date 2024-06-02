@@ -12,14 +12,26 @@ import simple
 WIFI_SSID = "Malisevic"
 WIFI_PASSWORD = "Ari_bjelov"
 
+# Display configuration
+I2C_ADDR = 0x27
+I2C_NUM_ROWS = 2
+I2C_NUM_COLS = 16
+
+# Temperature configuration
+MINIMUM_TEMP_DIFFERENCE = 5.0
+
+# Debounce configuration
+DEBOUNCE_TIME_MS = 300
+
 # MQTT configuration
 MQTT_SERVER = "broker.hivemq.com"
+MQTT_CLIENT_NAME = "Propuh-Pro-Control"
+
 MQTT_TOPIC_TARGET_TEMP = b"Propuh-Pro/target_temp"
 MQTT_TOPIC_CRITICAL_TEMP = b"Propuh-Pro/critical_temp"
 MQTT_TOPIC_FAN_MODE = b"Propuh-Pro/fan_mode"
 MQTT_TOPIC_MEASURED_TEMP = b"Propuh-Pro/measured_temp"
 
-MQTT_CLIENT_NAME = "Propuh-Pro-Control"
 
 # Initialize network
 print("Connecting to WiFi: ", WIFI_SSID)
@@ -43,17 +55,10 @@ INCREASE_BUTTON = Pin(19, Pin.IN)
 DECRESE_BUTTON = Pin(16, Pin.IN)
 
 
-# Display configuration
-I2C_ADDR = 0x27
-I2C_NUM_ROWS = 2
-I2C_NUM_COLS = 16
-
 I2C_BUS = I2C(1, sda=Pin(26), scl=Pin(27), freq=400000)
 LCD_DISPLAY = I2cLcd(I2C_BUS, I2C_ADDR, I2C_NUM_ROWS, I2C_NUM_COLS)
 
 
-# Debounce configuration
-DEBOUNCE_TIME_MS = 300
 debounce = 0
 
 
@@ -72,8 +77,6 @@ interface_mode = InterfaceMode()
 current_temp = 0.0
 target_temp = 22.0
 critical_temp = 35.0
-
-MINIMUM_TEMP_DIFFERENCE = 5.0
 
 
 def next_mode(pin):
@@ -130,13 +133,6 @@ def decrease_value(pin):
     print_configuration()
 
 
-# Input triggers
-NEXT_MODE_BUTTON.irq(handler=next_mode, trigger=Pin.IRQ_RISING)
-INCREASE_BUTTON.irq(handler=increase_value, trigger=Pin.IRQ_RISING)
-DECRESE_BUTTON.irq(handler=decrease_value, trigger=Pin.IRQ_RISING)
-PREVIOUS_MODE_BUTTON.irq(handler=previous_mode, trigger=Pin.IRQ_RISING)
-
-
 def print_configuration():
     fan_output = ""
 
@@ -187,12 +183,11 @@ def print_configuration():
         LCD_DISPLAY.putstr(output)
 
 
-print_configuration()
 
 
 def message_arrived_measured_temp(topic, msg):
     global current_temp
-    
+
     print()
     print()
     print("Message arrived on topic:", topic)
@@ -221,18 +216,23 @@ def send_data(timer):
 
     print("Sent!")
 
-
 def recive_data(timer):
     CLIENT.check_msg()
-
-
-SEND_DATA_TIMER = Timer(period=5000, mode=Timer.PERIODIC, callback=send_data)
-RECIVE_DATA_TIMER = Timer(period=500, mode=Timer.PERIODIC, callback=recive_data)
-
 
 def round_to_nearest_half(value) -> float:
     return round(value * 2) / 2
 
+# Data transfer timers
+SEND_DATA_TIMER = Timer(period=5000, mode=Timer.PERIODIC, callback=send_data)
+RECIVE_DATA_TIMER = Timer(period=500, mode=Timer.PERIODIC, callback=recive_data)
+
+# Input triggers
+NEXT_MODE_BUTTON.irq(handler=next_mode, trigger=Pin.IRQ_RISING)
+INCREASE_BUTTON.irq(handler=increase_value, trigger=Pin.IRQ_RISING)
+DECRESE_BUTTON.irq(handler=decrease_value, trigger=Pin.IRQ_RISING)
+PREVIOUS_MODE_BUTTON.irq(handler=previous_mode, trigger=Pin.IRQ_RISING)
+
+print_configuration()
 
 while True:
     pass
