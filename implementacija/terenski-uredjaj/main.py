@@ -23,6 +23,7 @@ MQTT_CLIENT_NAME = "Propuh-Pro-Teren"
 print("Connecting to WiFi: ", WIFI_SSID)
 WIFI = network.WLAN(network.STA_IF)
 WIFI.active(True)
+WIFI.config(pm = 0xa11140) # Disable powersave mode
 WIFI.connect(WIFI_SSID, WIFI_PASSWORD)
 
 # Wait until connected
