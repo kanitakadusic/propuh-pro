@@ -28,12 +28,14 @@ WIFI.active(True)
 WIFI.config(pm=0xA11140)  # Disable powersave mode
 WIFI.connect(WIFI_SSID, WIFI_PASSWORD)
 
+
 # Wait until connected
 while not WIFI.isconnected():
     pass
 
 print("Connected to network!")
 print("IP address:", WIFI.ifconfig()[0])
+
 
 NEXT_MODE_BUTTON = Pin(18, Pin.IN)
 PREVIOUS_MODE_BUTTON = Pin(17, Pin.IN)
