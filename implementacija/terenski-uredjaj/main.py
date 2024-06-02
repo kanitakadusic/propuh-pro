@@ -86,6 +86,7 @@ def message_arrived_fan_mode(topic, msg):
     print("Payload:", msg)
     fan_controller.set_mode(int(float(msg)))
     set_fan_speed(fan_controller.get_speed_u16)
+    update_vu_meter()
 
 
 def message_arrived_critical_temp(topic, msg):
@@ -122,5 +123,7 @@ client.subscribe(mqtt_topic_target_temp)
 
 
 while True:
+    client.check_msg()
+    client.check_msg()
     client.check_msg()
     sleep(5)

@@ -52,28 +52,43 @@ class FanSpeedController:
         self.fan_mode = fan_mode
         self.current_speed = 0
 
+    def __update_current_speed(self):
+
+        pass
+
     def set_mode(self, new_fan_mode):
         self.fan_mode = new_fan_mode
+        __update_current_speed()
 
     def get_mode(self):
         return self.fan_mode
 
     def set_target_temp(self, new_target_temp):
+        update_current_speed()
         self.target_temp = new_target_temp
 
     def set_critical_temp(self, new_critical_temp):
+        update_current_speed()
         self.target_temp = new_critical_temp
 
     def get_speed_percent(self, current_temp):
         if self.fan_mode == FanMode.AUTO:
-            return 0.0  # TODO: Osmisliti proracun za AUTO mod
+            diff = self.critical_temp - self.target_temp
+            perc = (current_temp - self.target_temp) / diff
+            if perc < 0.33:
+                return 0.0
+            elif perc >= 0.33 and perc < 0.66:
+                return 1/3
+            elif perc >= 0.66 and perc < 1:
+                return 2/3
+            elif    # TODO: Osmisliti proracun za AUTO mod
         # Mozda neka eksponencijalna skala
         # ili eksponencijalno do 50% opsega temperatrue
         # pa logaritamski do 90% opsega
 
-        return self.fan_mode.get_mode() / len(
+        return self.fan_mode.get_mode() / (len(
             FanMode.VALID_MODES
-        )  # Ovo mozda prepraviti
+        ) - 2)  # Ovo mozda prepraviti
 
     def get_speed_u16(self, current_temp):
         U16 = 2**16 - 1
