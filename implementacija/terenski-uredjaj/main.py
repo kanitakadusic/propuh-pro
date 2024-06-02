@@ -3,38 +3,45 @@ from time import sleep
 from FanSpeedController import *
 import network
 import simple
-from BusOut  import *
+from BusOut import *
 
-#TODO:  DHT11 - https://www.upesy.com/blogs/tutorials/use-dht11-humidity-temperature-sensor-on-pi-pico-with-micro-python-script 
-#       Although it is straightforward, this tool is limited in speed, as it can only measure once per second.
 
 # WiFi configuration
-wifi_ssid = "mirza"
-wifi_password = "zakadiju"
+WIFI_SSID = "mirza"
+WIFI_PASSWORD = "zakadiju"
 
 # MQTT configuration
-mqtt_server = "broker.hivemq.com"
-mqtt_topic_target_temp = b"Propuh-Pro/target_temp"
-mqtt_topic_critical_temp = b"Propuh-Pro/critical_temp"
-mqtt_topic_fan_mode = b"Propuh-Pro/fan_mode"
-mqtt_topic_measured_temp = b"Propuh-Pro/measured_temp"
+MQTT_SERVER = "broker.hivemq.com"
+MQTT_TOPIC_TARGET_TEMP = b"Propuh-Pro/target_temp"
+MQTT_TOPIC_CRITICAL_TEMP = b"Propuh-Pro/critical_temp"
+MQTT_TOPIC_FAN_MODE = b"Propuh-Pro/fan_mode"
+MQTT_TOPIC_MEASURED_TEMP = b"Propuh-Pro/measured_temp"
 
-mqtt_client_name = "Propuh-Pro-Teren"
+MQTT_CLIENT_NAME = "Propuh-Pro-Teren"
 
 # Initialize network
-print("Connecting to WiFi: ", wifi_ssid)
-wifi = network.WLAN(network.STA_IF)
-wifi.active(True)
-wifi.connect(wifi_ssid, wifi_password)
+print("Connecting to WiFi: ", WIFI_SSID)
+WIFI = network.WLAN(network.STA_IF)
+WIFI.active(True)
+WIFI.config(pm = 0xa11140) # Disable powersave mode
+WIFI.connect(WIFI_SSID, WIFI_PASSWORD)
 
 # Wait until connected
-while not wifi.isconnected():
+while not WIFI.isconnected():
     pass
 
 print("Connected to network!")
-print("IP address:", wifi.ifconfig()[0])
+print("IP address:", WIFI.ifconfig()[0])
 
 
+FAN_VU_METAR_LEDS = BusOut([4, 5, 6, 7, 8, 9])  # Tacno za picoETF
+
+OVERHEATING_LED = Pin(
+    11, Pin.OUT
+)  # TODO: Treba da blinka ako je izmjerena temperatura >= kriticne temperature
+
+# fan_pwm = PWM(Pin(1)) #TODO: OVO JE PROIZVOLJNO - provjeriti koji Pin se zapravo moze koristiti
+# fan_pwm.freq(500)
 
 fan_vu_meter_leds = BusOut([4, 5, 6, 7, 8, 9]) # Tacno za picoETF
 
@@ -50,7 +57,6 @@ temp_sum = 0
 measured_temp = 0
 fan_controller = FanSpeedController(20,30,22)
 fan_controller.set_current_temp(22)
-
 CALIBRATION_OFFSET = -1790
 
 def check_temperature(t):
@@ -73,7 +79,7 @@ def check_temperature(t):
         update_vu_meter(light)
         print("brzina=",fan_controller.get_speed_u16())
         publish = str(measured_temp)
-        client.publish(mqtt_topic_measured_temp, publish)
+        CLIENT.publish(MQTT_TOPIC_MEASURED_TEMP, publish)
 
 tim = Timer(period = 500, mode = Timer.PERIODIC, callback = check_temperature)
 
@@ -105,6 +111,7 @@ def message_arrived_critical_temp(topic, msg):
     set_fan_speed(speed)
     update_vu_meter(light)
 
+
 def message_arrived_target_temp(topic, msg):
     global fan_controller
     print("Message arrived on topic:", topic)
@@ -115,26 +122,28 @@ def message_arrived_target_temp(topic, msg):
     set_fan_speed(speed)
     update_vu_meter(light)
 
+
 def custom_dispatcher(topic, msg):
-    if topic == mqtt_topic_fan_mode:
+    if topic == MQTT_TOPIC_FAN_MODE:
         message_arrived_fan_mode(topic, msg)
-    elif topic == mqtt_topic_critical_temp:
+    elif topic == MQTT_TOPIC_CRITICAL_TEMP:
         message_arrived_critical_temp(topic, msg)
-    elif topic == mqtt_topic_target_temp:
+    elif topic == MQTT_TOPIC_TARGET_TEMP:
         message_arrived_target_temp(topic, msg)
 
+
 # Connect to MQTT broker
-client = simple.MQTTClient(client_id=mqtt_client_name, server=mqtt_server, port=1883)
-client.connect()
+CLIENT = simple.MQTTClient(client_id=MQTT_CLIENT_NAME, server=MQTT_SERVER, port=1883)
+CLIENT.connect()
 
 # Subscribe to topics
-client.set_callback(custom_dispatcher)
-client.subscribe(mqtt_topic_fan_mode)
-client.subscribe(mqtt_topic_critical_temp)
-client.subscribe(mqtt_topic_target_temp)
+CLIENT.set_callback(custom_dispatcher)
+CLIENT.subscribe(MQTT_TOPIC_FAN_MODE)
+CLIENT.subscribe(MQTT_TOPIC_CRITICAL_TEMP)
+CLIENT.subscribe(MQTT_TOPIC_TARGET_TEMP)
 
 while True:
-    client.check_msg()
-    client.check_msg()
-    client.check_msg()
+    CLIENT.check_msg()
+    CLIENT.check_msg()
+    CLIENT.check_msg()
     sleep(1)

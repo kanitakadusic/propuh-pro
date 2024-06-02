@@ -9,8 +9,8 @@ import network
 import simple
 
 # WiFi configuration
-WIFI_SSID = "Edge 40 Neo - Haris"
-WIFI_PASSWORD = "nope1234"
+WIFI_SSID = "Malisevic"
+WIFI_PASSWORD = "Ari_bjelov"
 
 # MQTT configuration
 MQTT_SERVER = "broker.hivemq.com"
@@ -23,21 +23,22 @@ MQTT_CLIENT_NAME = "Propuh-Pro-Control"
 
 # Initialize network
 print("Connecting to WiFi: ", WIFI_SSID)
-wifi = network.WLAN(network.STA_IF)
-wifi.active(True)
-wifi.connect(WIFI_SSID, WIFI_PASSWORD)
+WIFI = network.WLAN(network.STA_IF)
+WIFI.active(True)
+WIFI.config(pm=0xA11140)  # Disable powersave mode
+WIFI.connect(WIFI_SSID, WIFI_PASSWORD)
 
 # Wait until connected
-while not wifi.isconnected():
+while not WIFI.isconnected():
     pass
 
 print("Connected to network!")
-print("IP address:", wifi.ifconfig()[0])
+print("IP address:", WIFI.ifconfig()[0])
 
-next_mode_button = Pin(18, Pin.IN)
-previous_mode_button = Pin(17, Pin.IN)
-increase_button = Pin(19, Pin.IN)
-decrease_button = Pin(16, Pin.IN)
+NEXT_MODE_BUTTON = Pin(18, Pin.IN)
+PREVIOUS_MODE_BUTTON = Pin(17, Pin.IN)
+INCREASE_BUTTON = Pin(19, Pin.IN)
+DECRESE_BUTTON = Pin(16, Pin.IN)
 
 
 # Display configuration
@@ -45,8 +46,8 @@ I2C_ADDR = 0x27
 I2C_NUM_ROWS = 2
 I2C_NUM_COLS = 16
 
-i2c = I2C(0, sda=Pin(0), scl=Pin(1), freq=400000)
-lcd = I2cLcd(i2c, I2C_ADDR, I2C_NUM_ROWS, I2C_NUM_COLS)
+I2C_BUS = I2C(1, sda=Pin(26), scl=Pin(27), freq=400000)
+LCD_DISPLAY = I2cLcd(I2C_BUS, I2C_ADDR, I2C_NUM_ROWS, I2C_NUM_COLS)
 
 
 # Debounce configuration
@@ -128,10 +129,10 @@ def decrease_value(pin):
 
 
 # Input triggers
-next_mode_button.irq(handler=next_mode, trigger=Pin.IRQ_RISING)
-increase_button.irq(handler=increase_value, trigger=Pin.IRQ_RISING)
-decrease_button.irq(handler=decrease_value, trigger=Pin.IRQ_RISING)
-previous_mode_button.irq(handler=previous_mode, trigger=Pin.IRQ_RISING)
+NEXT_MODE_BUTTON.irq(handler=next_mode, trigger=Pin.IRQ_RISING)
+INCREASE_BUTTON.irq(handler=increase_value, trigger=Pin.IRQ_RISING)
+DECRESE_BUTTON.irq(handler=decrease_value, trigger=Pin.IRQ_RISING)
+PREVIOUS_MODE_BUTTON.irq(handler=previous_mode, trigger=Pin.IRQ_RISING)
 
 
 def print_configuration():
@@ -150,7 +151,6 @@ def print_configuration():
         fan_output = mode_outputs.get(fan_mode.current_mode, "UNKNOWN")
 
     print()
-    print()
     print("Mode:", interface_mode.get_mode_name())
 
     current_mode = interface_mode.get_mode()
@@ -158,26 +158,31 @@ def print_configuration():
     if current_mode == InterfaceMode.TARGET_TEMP_CONFIG:
         output = "Target temp:\n" + str(target_temp) + chr(223) + "C"
         print(output)
-        lcd.clear()
-        lcd.putstr(output)
+        LCD_DISPLAY.clear()
+        LCD_DISPLAY.putstr(output)
 
     elif current_mode == InterfaceMode.CRITICAL_TEMP_CONFIG:
         output = "Critical temp:\n" + str(critical_temp) + chr(223) + "C"
         print(output)
-        lcd.clear()
-        lcd.putstr(output)
+        LCD_DISPLAY.clear()
+        LCD_DISPLAY.putstr(output)
 
     elif current_mode == InterfaceMode.FAN_CONFIG:
         output = "Fan speed:\n" + str(fan_output)
         print(output)
-        lcd.clear()
-        lcd.putstr(output)
+        LCD_DISPLAY.clear()
+        LCD_DISPLAY.putstr(output)
 
     else:
-        output = "Current temp:\n" + str(current_temp) + chr(223) + "C"
+        output = (
+            "Current temp:\n"
+            + str(round_to_nearest_half(current_temp))
+            + chr(223)
+            + "C"
+        )
         print(output)
-        lcd.clear()
-        lcd.putstr(output)
+        LCD_DISPLAY.clear()
+        LCD_DISPLAY.putstr(output)
 
 
 print_configuration()
@@ -185,6 +190,9 @@ print_configuration()
 
 def message_arrived_measured_temp(topic, msg):
     global current_temp
+    
+    print()
+    print()
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
     current_temp = float(msg)
@@ -192,32 +200,36 @@ def message_arrived_measured_temp(topic, msg):
 
 
 # Connect to MQTT broker
-client = simple.MQTTClient(client_id=MQTT_CLIENT_NAME, server=MQTT_SERVER, port=1883)
-client.connect()
+CLIENT = simple.MQTTClient(client_id=MQTT_CLIENT_NAME, server=MQTT_SERVER, port=1883)
+CLIENT.connect()
 
-client.set_callback(message_arrived_measured_temp)
-client.subscribe(MQTT_TOPIC_MEASURED_TEMP)
+CLIENT.set_callback(message_arrived_measured_temp)
+CLIENT.subscribe(MQTT_TOPIC_MEASURED_TEMP)
 
 
 def send_data(timer):
     publish = str(fan_mode.get_mode())
-    client.publish(MQTT_TOPIC_FAN_MODE, publish)
+    CLIENT.publish(MQTT_TOPIC_FAN_MODE, publish)
 
     publish = str(target_temp)
-    client.publish(MQTT_TOPIC_TARGET_TEMP, publish)
+    CLIENT.publish(MQTT_TOPIC_TARGET_TEMP, publish)
 
     publish = str(critical_temp)
-    client.publish(MQTT_TOPIC_CRITICAL_TEMP, publish)
+    CLIENT.publish(MQTT_TOPIC_CRITICAL_TEMP, publish)
 
     print("Sent!")
 
 
 def recive_data(timer):
-    client.check_msg()
+    CLIENT.check_msg()
 
 
-SEND_DATA_TIMER = Timer(period=5000, callback=send_data, mode=Timer.PERIODIC)
-RECIVE_DATA_TIMER = Timer(period=500, callback=recive_data, mode=Timer.PERIODIC)
+SEND_DATA_TIMER = Timer(period=5000, mode=Timer.PERIODIC, callback=send_data)
+RECIVE_DATA_TIMER = Timer(period=500, mode=Timer.PERIODIC, callback=recive_data)
+
+
+def round_to_nearest_half(value) -> float:
+    return round(value * 2) / 2
 
 
 while True:
