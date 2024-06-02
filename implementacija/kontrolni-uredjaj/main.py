@@ -9,8 +9,8 @@ import network
 import simple
 
 # WiFi configuration
-WIFI_SSID = "Edge 40 Neo - Haris"
-WIFI_PASSWORD = "nope1234"
+WIFI_SSID = "Malisevic"
+WIFI_PASSWORD = "Ari_bjelov"
 
 # MQTT configuration
 MQTT_SERVER = "broker.hivemq.com"
@@ -151,7 +151,6 @@ def print_configuration():
         fan_output = mode_outputs.get(fan_mode.current_mode, "UNKNOWN")
 
     print()
-    print()
     print("Mode:", interface_mode.get_mode_name())
 
     current_mode = interface_mode.get_mode()
@@ -191,6 +190,9 @@ print_configuration()
 
 def message_arrived_measured_temp(topic, msg):
     global current_temp
+    
+    print()
+    print()
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
     current_temp = float(msg)
