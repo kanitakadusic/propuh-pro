@@ -46,7 +46,7 @@ I2C_ADDR = 0x27
 I2C_NUM_ROWS = 2
 I2C_NUM_COLS = 16
 
-I2C_BUS = I2C(0, sda=Pin(0), scl=Pin(1), freq=400000)
+I2C_BUS = I2C(1, sda=Pin(26), scl=Pin(27), freq=400000)
 LCD_DISPLAY = I2cLcd(I2C_BUS, I2C_ADDR, I2C_NUM_ROWS, I2C_NUM_COLS)
 
 
