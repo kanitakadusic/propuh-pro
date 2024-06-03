@@ -83,7 +83,6 @@ class FanSpeedController:
                     j = 0
                 i = (i + 1) % 2
         print("brzina=",self.current_speed)
-            
                 
     def set_mode(self, new_fan_mode):
         self.fan_mode = new_fan_mode
@@ -113,7 +112,7 @@ class FanSpeedController:
         return U16 * self.get_speed_percent()
     
     def get_speed_binary(self):
-        return bin(2**self.current_speed - 1)
+        return bin(2**(2 * self.current_speed) - 1)
     
     def get_alarm(self):
         return self.alarm
