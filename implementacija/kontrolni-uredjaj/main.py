@@ -59,7 +59,6 @@ INCREASE_BUTTON = Pin(17, Pin.IN)
 DECRESE_BUTTON = Pin(18, Pin.IN)
 
 
-
 debounce = 0
 
 
@@ -168,6 +167,10 @@ def print_configuration():
 
     elif current_mode == InterfaceMode.FAN_CONFIG:
         output = "Fan speed:\n" + str(fan_output)
+
+        if fan_mode.get_mode() != FanMode.AUTO:
+            output = output + "   " + fan_mode.get_mode_name()
+
         print(output)
         LCD_DISPLAY.clear()
         LCD_DISPLAY.putstr(output)
@@ -182,8 +185,6 @@ def print_configuration():
         print(output)
         LCD_DISPLAY.clear()
         LCD_DISPLAY.putstr(output)
-
-
 
 
 def message_arrived_measured_temp(topic, msg):
@@ -217,11 +218,14 @@ def send_data(timer):
 
     print("Sent!")
 
+
 def recive_data(timer):
     CLIENT.check_msg()
 
+
 def round_to_nearest_half(value) -> float:
     return round(value * 2) / 2
+
 
 # Data transfer timers
 SEND_DATA_TIMER = Timer(period=5000, mode=Timer.PERIODIC, callback=send_data)
