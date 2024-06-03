@@ -104,11 +104,12 @@ t = Timer(period = 500, mode = Timer.PERIODIC, callback = toggle_led)
 t.deinit()
 
 def turn_alarm_off(pin):
-    global t
-    if debouncing() == False:
-        return
+    global alarm_pwm, overheating_led,fan_controller
+    alarm_pwm.duty_u16(0)
+    overheating_led.off()
     fan_controller.turn_alarm_off()
-    t.deinit()    
+    fan_controller.set_current_temp(22)
+    #t.deinit()    
 
 alarm_off_pin.irq(handler=turn_alarm_off, trigger=Pin.IRQ_RISING)
 
