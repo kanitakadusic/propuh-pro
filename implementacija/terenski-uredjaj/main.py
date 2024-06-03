@@ -1,5 +1,5 @@
 from machine import Pin, PWM, ADC, Timer
-from time import sleep
+from time import sleep, ticks_ms, ticks_diff
 from FanSpeedController import *
 import network
 import simple
@@ -34,14 +34,6 @@ print("Connected to network!")
 print("IP address:", WIFI.ifconfig()[0])
 
 
-FAN_VU_METAR_LEDS = BusOut([4, 5, 6, 7, 8, 9])  # Tacno za picoETF
-
-OVERHEATING_LED = Pin(
-    11, Pin.OUT
-)  # TODO: Treba da blinka ako je izmjerena temperatura >= kriticne temperature
-
-# fan_pwm = PWM(Pin(1)) #TODO: OVO JE PROIZVOLJNO - provjeriti koji Pin se zapravo moze koristiti
-# fan_pwm.freq(500)
 
 fan_vu_meter_leds = BusOut([4, 5, 6, 7, 8, 9]) # Tacno za picoETF
 
@@ -50,14 +42,30 @@ overheating_led = Pin(11, Pin.OUT) #TODO: Treba da blinka ako je izmjerena tempe
 fan_pwm = PWM(Pin(22)) #TODO: OVO JE PROIZVOLJNO - provjeriti koji Pin se zapravo moze koristiti
 fan_pwm.freq(500)
 
+alarm_pwm = PWM(Pin(27))
+alarm_pwm.freq(1000)
+
 
 sensor_pin = ADC(Pin(28))
+alarm_off_pin = Pin(0, Pin.OUT)
 counter = 0
 temp_sum = 0
 measured_temp = 0
 fan_controller = FanSpeedController(20,30,22)
-fan_controller.set_current_temp(22)
+fan_controller.set_current_temp(32)
 CALIBRATION_OFFSET = -1790
+
+
+DEBOUNCE_TIME_MS = 300
+debounce = 0
+
+def debouncing():
+    global debounce
+    if ticks_diff(ticks_ms(), debounce) < DEBOUNCE_TIME_MS:
+        return False
+    else:
+        debounce = ticks_ms()
+        return True
 
 def check_temperature(t):
     global sensor_pin, counter, temp_sum, measured_temp, CALIBRATION_OFFSET, fan_controller
@@ -72,16 +80,37 @@ def check_temperature(t):
         counter = 0
         temp_sum = 0
         print("temperature=", measured_temp)
-        fan_controller.set_current_temp(measured_temp)
+        #fan_controller.set_current_temp(measured_temp)
         speed = int(fan_controller.get_speed_u16())
         light = int(fan_controller.get_speed_binary())
-        set_fan_speed(speed)
+        if fan_controller.get_alarm() == 1:
+            turn_alarm_on()
+
+        #set_fan_speed(speed)
         update_vu_meter(light)
         print("brzina=",fan_controller.get_speed_u16())
         publish = str(measured_temp)
         CLIENT.publish(MQTT_TOPIC_MEASURED_TEMP, publish)
 
+def toggle_led(t):
+    global overheating_led
+    if overheating_led.value() == 1:
+        overheating_led.off()
+    else:
+        overheating_led.on()
+
 tim = Timer(period = 500, mode = Timer.PERIODIC, callback = check_temperature)
+t = Timer(period = 500, mode = Timer.PERIODIC, callback = toggle_led)
+t.deinit()
+
+def turn_alarm_off(pin):
+    global t
+    if debouncing() == False:
+        return
+    fan_controller.turn_alarm_off()
+    t.deinit()    
+
+alarm_off_pin.irq(handler=turn_alarm_off, trigger=Pin.IRQ_RISING)
 
 def update_vu_meter(binary_number): #TODO: Implementirati
     global fan_vu_meter_leds
@@ -89,6 +118,12 @@ def update_vu_meter(binary_number): #TODO: Implementirati
      
 def set_fan_speed(duty_u16):
     fan_pwm.duty_u16(duty_u16)
+
+def turn_alarm_on():
+    global alarm_pwm, overheating_led
+    overheating_led.on()
+    alarm_pwm.duty_u16(3000)
+    #t.init()
 
 def message_arrived_fan_mode(topic, msg):
     global fan_controller

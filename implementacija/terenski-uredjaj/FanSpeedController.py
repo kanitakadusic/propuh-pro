@@ -52,6 +52,7 @@ class FanSpeedController:
         self.fan_mode = fan_mode
         self.current_speed = 0
         self.current_temp = current_temp
+        self.alarm = 0
         self.working_regions = [(-0.1, 0.05), (0.05, 0.2), (0.2, 0.3), (0.3, 0.5), (0.5, 0.6)] 
 
     def update_current_speed(self):
@@ -66,7 +67,7 @@ class FanSpeedController:
             self.current_speed = 3 #FAST
             if percentage >= 1:
                 #TODO turn on the alarm and send with mqtt
-                pass
+                self.alarm = 1
         else:
             i = 0
             j = 1
@@ -113,4 +114,10 @@ class FanSpeedController:
     
     def get_speed_binary(self):
         return bin(2**self.current_speed - 1)
+    
+    def get_alarm(self):
+        return self.alarm
+    
+    def turn_alarm_off(self):
+        self.alarm = 0
 
