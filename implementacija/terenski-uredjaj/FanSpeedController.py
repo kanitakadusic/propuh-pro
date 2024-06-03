@@ -66,7 +66,6 @@ class FanSpeedController:
         elif percentage > self.working_regions[len(self.working_regions) - 1][1]:
             self.current_speed = 3 #FAST
             if percentage >= 1:
-                #TODO turn on the alarm and send with mqtt
                 self.alarm = 1
         else:
             i = 0
@@ -74,7 +73,13 @@ class FanSpeedController:
             new_speed = 0
             for low_border, top_border in self.working_regions:
                 if low_border <= percentage < top_border:
-                    if i == 1:
+                    if i == 0:
+                        if self.current_speed != new_speed and self.current_speed != new_speed + 1:
+                            if self.current_speed < new_speed:
+                                self.current_speed = new_speed
+                            else:
+                                self.current_speed = new_speed + 1
+                    else:
                         self.current_speed = new_speed
                     break
                 j += 1

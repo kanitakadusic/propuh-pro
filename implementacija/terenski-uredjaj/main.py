@@ -38,10 +38,9 @@ while not WIFI.isconnected():
 print("Connected to network!")
 print("IP address:", WIFI.ifconfig()[0])
 
-FAN_VU_METAR_LEDS = BusOut([4, 5, 6, 7, 8, 9])  # Tacno za picoETF
+FAN_VU_METER_LEDS = BusOut([4, 5, 6, 7, 8, 9])
 
 OVERHEATING_LED = Pin(11, Pin.OUT)
-# TODO: Treba da blinka ako je izmjerena temperatura >= kriticne temperature
 
 FAN_PWM = PWM(Pin(22))
 FAN_PWM.freq(500)
@@ -49,16 +48,17 @@ FAN_PWM.freq(500)
 ALARM_PWM = PWM(Pin(27))
 ALARM_PWM.freq(1000)
 
-ALARM_OFF_PIN = Pin(0, Pin.OUT)
+ALARM_OFF_PIN = Pin(0, Pin.IN)
 
 LM35_SENSOR_PIN = ADC(Pin(28))
 
 temp_sum = 0.0
 measured_temp = 0.0
 sample_counter = 0
+alarm = 0
 
 fan_controller = FanSpeedController(20, 30, 22)
-fan_controller.set_current_temp(22)
+fan_controller.set_current_temp(32)
 
 
 DEBOUNCE_TIME_MS = 300
@@ -71,58 +71,63 @@ def debouncing():
     else:
         debounce = ticks_ms()
         return True
+    
+def update_system():
+    global alarm, fan_controller
+    speed = int(fan_controller.get_speed_u16())
+    light = int(fan_controller.get_speed_binary())
+    #TODO: Da li se alarm treba sam ugasiti ako se temp vrati u normalu?
+    if fan_controller.get_alarm() == 1 and alarm == 0:
+        alarm = 1
+        turn_alarm_on()
+    set_fan_speed(speed)
+    update_vu_meter(light)
 
 def check_temperature(t):
-    global LM35_SENSOR_PIN, sample_counter, temp_sum, measured_temp, LM35_CALIBRATION_OFFSET, fan_controller
+    global sample_counter, temp_sum, measured_temp, fan_controller
 
     voltage = ((LM35_SENSOR_PIN.read_u16() + LM35_CALIBRATION_OFFSET) / 65535) * 3.3
-    # print("voltage:",voltage)
     temp_sum += round(voltage * 100, 1)
-    # print("temp=",temp)
     sample_counter += 1
+
     if sample_counter == LM35_NUMBER_OF_SAMPLES:
-        measured_temp = temp_sum / 10
+        measured_temp = temp_sum / LM35_NUMBER_OF_SAMPLES
         sample_counter = 0
         temp_sum = 0
-        print("temperature=", measured_temp)
-        #fan_controller.set_current_temp(measured_temp)
-        speed = int(fan_controller.get_speed_u16())
-        light = int(fan_controller.get_speed_binary())
-        if fan_controller.get_alarm() == 1:
-            turn_alarm_on()
+        print("Average temperature= ", measured_temp)
+        fan_controller.set_current_temp(measured_temp)
+        
+        update_system()
 
-        #set_fan_speed(speed)
-        update_vu_meter(light)
-
-def toggle_led(t):
-    global overheating_led
-    if overheating_led.value() == 1:
-        overheating_led.off()
+def toggle_alarm(t):
+    if OVERHEATING_LED.value() == 1:
+        OVERHEATING_LED.off()
+        ALARM_PWM.duty_u16(45000)
     else:
-        overheating_led.on()
-
-tim = Timer(period = 500, mode = Timer.PERIODIC, callback = check_temperature)
-t = Timer(period = 500, mode = Timer.PERIODIC, callback = toggle_led)
-t.deinit()
+        OVERHEATING_LED.on()
+        ALARM_PWM.duty_u16(10000)
 
 def turn_alarm_off(pin):
-    global ALARM_PWM, overheating_led,fan_controller
-    ALARM_PWM.duty_u16(0)
-    overheating_led.off()
-    fan_controller.turn_alarm_off()
-    fan_controller.set_current_temp(22)
-    #t.deinit()    
+    global fan_controller, alarm
 
-ALARM_OFF_PIN.irq(handler=turn_alarm_off, trigger=Pin.IRQ_RISING)
+    fan_controller.turn_alarm_off()
+    alarm = 0
+    #fan_controller.set_current_temp(22)
+    ALARM_PWM.duty_u16(0)
+    OVERHEATING_LED.off()
+    ALARM_TIMER.deinit()    
 
 def set_fan_speed(duty_u16):
     FAN_PWM.duty_u16(duty_u16)
 
+def update_vu_meter(number):
+    FAN_VU_METER_LEDS.set_value(number)
 
 def turn_alarm_on():
-    global ALARM_PWM, overheating_led
-    overheating_led.on()
+    global ALARM_TIMER
+    OVERHEATING_LED.on()
     ALARM_PWM.duty_u16(3000)
+    ALARM_TIMER = Timer(period = 500, mode = Timer.PERIODIC, callback = toggle_alarm)
     #t.init()
 
 def message_arrived_fan_mode(topic, msg):
@@ -130,10 +135,8 @@ def message_arrived_fan_mode(topic, msg):
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
     fan_controller.set_mode(FanMode(int(float(msg))))
-    speed = int(fan_controller.get_speed_u16())
-    light = int(fan_controller.get_speed_binary())
-    set_fan_speed(speed)
-    update_vu_meter(light)
+    
+    update_system()
 
 
 def message_arrived_critical_temp(topic, msg):
@@ -141,10 +144,8 @@ def message_arrived_critical_temp(topic, msg):
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
     fan_controller.set_critical_temp(float(msg))
-    speed = int(fan_controller.get_speed_u16())
-    light = int(fan_controller.get_speed_binary())
-    set_fan_speed(speed)
-    update_vu_meter(light)
+    
+    update_system()
 
 
 def message_arrived_target_temp(topic, msg):
@@ -152,10 +153,8 @@ def message_arrived_target_temp(topic, msg):
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
     fan_controller.set_target_temp(float(msg))
-    speed = int(fan_controller.get_speed_u16())
-    light = int(fan_controller.get_speed_binary())
-    set_fan_speed(speed)
-    update_vu_meter(light)
+    
+    update_system()
 
 
 def custom_dispatcher(topic, msg):
@@ -177,21 +176,19 @@ CLIENT.subscribe(MQTT_TOPIC_FAN_MODE)
 CLIENT.subscribe(MQTT_TOPIC_CRITICAL_TEMP)
 CLIENT.subscribe(MQTT_TOPIC_TARGET_TEMP)
 
-
-def send_data(measured_temp):
-    publish = str(measured_temp)
-    CLIENT.publish(MQTT_TOPIC_MEASURED_TEMP, publish)
-
-
-def recive_data():
+def recieve_data(t):
     CLIENT.check_msg()
     CLIENT.check_msg()
     CLIENT.check_msg()
+
+def nop(t):
+    pass
 
 
 CHECK_TEMP_TIMER = Timer(period=500, mode=Timer.PERIODIC, callback=check_temperature)
-RECIVE_DATA_TIMER = Timer(period=1000, mode=Timer.PERIODIC, callback=recive_data)
-
+RECIEVE_DATA_TIMER = Timer(period=1000, mode=Timer.PERIODIC, callback=recieve_data)
+ALARM_OFF_PIN.irq(handler=turn_alarm_off, trigger=Pin.IRQ_RISING)
+ALARM_TIMER = Timer(period = 100, mode = Timer.ONE_SHOT, callback = nop)
 
 while True:
     pass
