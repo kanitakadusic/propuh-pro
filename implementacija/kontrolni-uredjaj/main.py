@@ -187,12 +187,12 @@ def print_alarm():
 
     alarm_blink_counter = 0
 
-    print("TEMPERATURE\nCRITICAL  " + str(current_temp))
+    print("TEMPERATURE\nCRITICAL  " + str(current_temp)+ chr(223) + "C")
 
     while alarm_blink_counter <= 5:
         LCD_DISPLAY.clear()
         sleep(0.5)
-        LCD_DISPLAY.putstr("TEMPERATURE\nCRITICAL  " + str(current_temp))
+        LCD_DISPLAY.putstr("TEMPERATURE\nCRITICAL  " + str(current_temp)+ chr(223) + "C")
         sleep(0.8)
 
         alarm_blink_counter += 1
@@ -254,8 +254,6 @@ DECRESE_BUTTON.irq(handler=decrease_value, trigger=Pin.IRQ_RISING)
 PREVIOUS_MODE_BUTTON.irq(handler=previous_mode, trigger=Pin.IRQ_RISING)
 
 print_configuration()
-sleep(2.0)
-print_alarm()
 
 while True:
     pass
