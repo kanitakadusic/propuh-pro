@@ -187,6 +187,18 @@ def print_configuration():
         LCD_DISPLAY.putstr(output)
 
 
+def print_alarm():
+    alarm_blink_counter = 0
+
+    while alarm_blink_counter <= 5:
+        LCD_DISPLAY.clear()
+        sleep(0.5)
+        LCD_DISPLAY.putstr("TEMPERATURE\nCRITICAL")
+        sleep(0.8)
+
+        alarm_blink_counter += 1
+
+
 def message_arrived_measured_temp(topic, msg):
     global current_temp
 
@@ -195,6 +207,11 @@ def message_arrived_measured_temp(topic, msg):
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
     current_temp = float(msg)
+
+    if current_temp >= critical_temp:
+        print_alarm()
+        return
+
     print_configuration()
 
 
