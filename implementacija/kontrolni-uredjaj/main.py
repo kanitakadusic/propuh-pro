@@ -21,6 +21,7 @@ I2C_NUM_COLS = 16
 I2C_BUS = I2C(1, sda=Pin(26), scl=Pin(27), freq=400000)
 LCD_DISPLAY = I2cLcd(I2C_BUS, I2C_ADDR, I2C_NUM_ROWS, I2C_NUM_COLS)
 
+
 # Temperature configuration
 MINIMUM_TEMP_DIFFERENCE = 5.0
 
@@ -176,24 +177,22 @@ def print_configuration():
         LCD_DISPLAY.putstr(output)
 
     else:
-        output = (
-            "Current temp:\n"
-            + str(round_to_nearest_half(current_temp))
-            + chr(223)
-            + "C"
-        )
+        output = "Current temp:\n" + str(current_temp) + chr(223) + "C"
         print(output)
         LCD_DISPLAY.clear()
         LCD_DISPLAY.putstr(output)
 
 
 def print_alarm():
+
     alarm_blink_counter = 0
+
+    print("TEMPERATURE\nCRITICAL  " + str(current_temp))
 
     while alarm_blink_counter <= 5:
         LCD_DISPLAY.clear()
         sleep(0.5)
-        LCD_DISPLAY.putstr("TEMPERATURE\nCRITICAL")
+        LCD_DISPLAY.putstr("TEMPERATURE\nCRITICAL  " + str(current_temp))
         sleep(0.8)
 
         alarm_blink_counter += 1
@@ -206,7 +205,7 @@ def message_arrived_measured_temp(topic, msg):
     print()
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
-    current_temp = float(msg)
+    current_temp = round_to_nearest_half(float(msg))
 
     if current_temp >= critical_temp:
         print_alarm()
@@ -255,6 +254,8 @@ DECRESE_BUTTON.irq(handler=decrease_value, trigger=Pin.IRQ_RISING)
 PREVIOUS_MODE_BUTTON.irq(handler=previous_mode, trigger=Pin.IRQ_RISING)
 
 print_configuration()
+sleep(2.0)
+print_alarm()
 
 while True:
     pass
