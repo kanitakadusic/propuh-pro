@@ -9,13 +9,17 @@ import network
 import simple
 
 # WiFi configuration
-WIFI_SSID = "Malisevic"
-WIFI_PASSWORD = "Ari_bjelov"
+WIFI_SSID = "Haris HotSpot"
+WIFI_PASSWORD = "nope1234"
 
 # Display configuration
 I2C_ADDR = 0x27
 I2C_NUM_ROWS = 2
 I2C_NUM_COLS = 16
+
+
+I2C_BUS = I2C(1, sda=Pin(26), scl=Pin(27), freq=400000)
+LCD_DISPLAY = I2cLcd(I2C_BUS, I2C_ADDR, I2C_NUM_ROWS, I2C_NUM_COLS)
 
 # Temperature configuration
 MINIMUM_TEMP_DIFFERENCE = 5.0
@@ -40,7 +44,7 @@ WIFI.active(True)
 WIFI.config(pm=0xA11140)  # Disable powersave mode
 WIFI.connect(WIFI_SSID, WIFI_PASSWORD)
 
-
+LCD_DISPLAY.putstr("Connecting...")
 # Wait until connected
 while not WIFI.isconnected():
     pass
@@ -49,14 +53,11 @@ print("Connected to network!")
 print("IP address:", WIFI.ifconfig()[0])
 
 
-NEXT_MODE_BUTTON = Pin(18, Pin.IN)
-PREVIOUS_MODE_BUTTON = Pin(17, Pin.IN)
-INCREASE_BUTTON = Pin(19, Pin.IN)
-DECRESE_BUTTON = Pin(16, Pin.IN)
+NEXT_MODE_BUTTON = Pin(16, Pin.IN)
+PREVIOUS_MODE_BUTTON = Pin(19, Pin.IN)
+INCREASE_BUTTON = Pin(17, Pin.IN)
+DECRESE_BUTTON = Pin(18, Pin.IN)
 
-
-I2C_BUS = I2C(1, sda=Pin(26), scl=Pin(27), freq=400000)
-LCD_DISPLAY = I2cLcd(I2C_BUS, I2C_ADDR, I2C_NUM_ROWS, I2C_NUM_COLS)
 
 
 debounce = 0
