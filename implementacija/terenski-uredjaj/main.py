@@ -96,6 +96,8 @@ def check_temperature(t):
         temp_sum = 0
         print("Average temperature=", measured_temp)
         fan_controller.set_current_temp(measured_temp)
+        publish = str(measured_temp)
+        CLIENT.publish(MQTT_TOPIC_MEASURED_TEMP, publish)
         
         update_system()
 
