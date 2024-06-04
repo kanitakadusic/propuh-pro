@@ -223,6 +223,10 @@ def message_arrived_target_temp(topic, msg):
 
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
+
+    if (critical_temp - MINIMUM_TEMP_DIFFERENCE < float(msg)):
+        return
+
     target_temp = round_to_nearest_half(float(msg))
 
     print_configuration()
@@ -233,6 +237,10 @@ def message_arrived_critical_temp(topic, msg):
 
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
+
+    if (target_temp + MINIMUM_TEMP_DIFFERENCE > float(msg)):
+        return
+    
     critical_temp = round_to_nearest_half(float(msg))
 
     print_configuration()
