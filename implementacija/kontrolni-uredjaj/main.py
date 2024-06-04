@@ -62,7 +62,6 @@ DECRESE_BUTTON = Pin(18, Pin.IN)
 
 debounce = 0
 
-
 def debouncing():
     global debounce
     if ticks_diff(ticks_ms(), debounce) < DEBOUNCE_TIME_MS:
@@ -219,6 +218,7 @@ def message_arrived_target_temp(topic, msg):
     global target_temp
     
     target_temp = float(msg)
+
     print(f"Target temperature updated to: {target_temp}")
     print_configuration()
    
@@ -228,9 +228,20 @@ def message_arrived_fan_mode(topic, msg):
     fan_mode.set_mode(int(float(msg)))
     print(f"Fan mode updated to: {fan_mode.current_mode}")
     print_configuration()
+
+def message_arrived_critical_temp(topic, msg):
+    global critical_temp
+
+    critical_temp = float(msg)
+    print(f"Critical temperature updated to: {critical_temp}")
+
+    if current_temp >= critical_temp:
+        print_alarm()
+        return
+
+    print_configuration()
    
 
-# Dispatcher funkcija koja poziva odgovarajuću funkciju na temelju teme
 def callback_dispatcher(topic, msg):
     if topic == MQTT_TOPIC_MEASURED_TEMP:
         message_arrived_measured_temp(topic, msg)
@@ -238,6 +249,8 @@ def callback_dispatcher(topic, msg):
         message_arrived_target_temp(topic, msg)
     elif topic == MQTT_TOPIC_FAN_MODE:
         message_arrived_fan_mode(topic, msg)
+    elif topic == MQTT_TOPIC_CRITICAL_TEMP:
+        message_arrived_critical_temp(topic, msg)
     else:
         print(f"No callback function defined for topic: {topic}")
 
@@ -252,6 +265,7 @@ CLIENT.connect()
 CLIENT.subscribe(MQTT_TOPIC_MEASURED_TEMP)
 CLIENT.subscribe(MQTT_TOPIC_TARGET_TEMP)
 CLIENT.subscribe(MQTT_TOPIC_FAN_MODE)
+CLIENT.subscribe(MQTT_TOPIC_CRITICAL_TEMP)
 
 def send_data(timer):
     publish = str(fan_mode.get_mode())
@@ -266,7 +280,8 @@ def send_data(timer):
     print("Sent!")
 
 
-def recive_data(timer):
+def recieve_data(timer):
+    CLIENT.check_msg()
     CLIENT.check_msg()
     CLIENT.check_msg()
     CLIENT.check_msg()
@@ -278,7 +293,7 @@ def round_to_nearest_half(value) -> float:
 
 # Data transfer timers
 SEND_DATA_TIMER = Timer(period=5000, mode=Timer.PERIODIC, callback=send_data)
-RECIVE_DATA_TIMER = Timer(period=500, mode=Timer.PERIODIC, callback=recive_data)
+RECIVE_DATA_TIMER = Timer(period=500, mode=Timer.PERIODIC, callback=reciesve_data)
 
 
 # Input triggers
