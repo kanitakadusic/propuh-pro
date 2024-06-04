@@ -9,8 +9,8 @@ import network
 import simple
 
 # WiFi configuration
-WIFI_SSID = "Haris HotSpot"
-WIFI_PASSWORD = "nope1234"
+WIFI_SSID = "mirza"
+WIFI_PASSWORD = "zakadiju"
 
 # Display configuration
 I2C_ADDR = 0x27
@@ -62,6 +62,7 @@ DECRESE_BUTTON = Pin(18, Pin.IN)
 
 debounce = 0
 
+
 def debouncing():
     global debounce
     if ticks_diff(ticks_ms(), debounce) < DEBOUNCE_TIME_MS:
@@ -81,7 +82,7 @@ critical_temp = 35.0
 
 def next_mode(pin):
 
-    if not debouncing():
+    if debouncing() == False:
         return
 
     interface_mode.next()
@@ -90,7 +91,7 @@ def next_mode(pin):
 
 def previous_mode(pin):
 
-    if not debouncing():
+    if debouncing() == False:
         return
 
     interface_mode.previous()
@@ -101,7 +102,7 @@ def increase_value(pin):
     global target_temp
     global critical_temp
 
-    if not debouncing():
+    if debouncing() == False:
         return
 
     if interface_mode.get_mode() == InterfaceMode.TARGET_TEMP_CONFIG:
@@ -116,10 +117,10 @@ def increase_value(pin):
 
 
 def decrease_value(pin):
-
     global target_temp
     global critical_temp
-    if not debouncing():
+
+    if debouncing() == False:
         return
 
     if interface_mode.get_mode() == InterfaceMode.TARGET_TEMP_CONFIG:
@@ -134,7 +135,6 @@ def decrease_value(pin):
 
 
 def print_configuration():
-
     fan_output = ""
 
     if fan_mode == FanMode.AUTO:
@@ -184,14 +184,17 @@ def print_configuration():
 
 
 def print_alarm():
+
     alarm_blink_counter = 0
 
-    print("TEMPERATURE\nCRITICAL  " + str(current_temp)+ chr(223) + "C")
+    print("TEMPERATURE\nCRITICAL  " + str(current_temp) + chr(223) + "C")
 
     while alarm_blink_counter <= 5:
         LCD_DISPLAY.clear()
         sleep(0.5)
-        LCD_DISPLAY.putstr("TEMPERATURE\nCRITICAL  " + str(current_temp)+ chr(223) + "C")
+        LCD_DISPLAY.putstr(
+            "TEMPERATURE\nCRITICAL  " + str(current_temp) + chr(223) + "C"
+        )
         sleep(0.8)
 
         alarm_blink_counter += 1
@@ -200,9 +203,6 @@ def print_alarm():
 def message_arrived_measured_temp(topic, msg):
     global current_temp
 
-  
-    print()
-    print()
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
     current_temp = round_to_nearest_half(float(msg))
@@ -214,58 +214,62 @@ def message_arrived_measured_temp(topic, msg):
     print_configuration()
 
 
+def round_to_nearest_half(value) -> float:
+    return round(value * 2) / 2
+
+
 def message_arrived_target_temp(topic, msg):
     global target_temp
-    
-    target_temp = float(msg)
 
-    print(f"Target temperature updated to: {target_temp}")
-    print_configuration()
-   
+    print("Message arrived on topic:", topic)
+    print("Payload:", msg)
+    target_temp = round_to_nearest_half(float(msg))
 
-def message_arrived_fan_mode(topic, msg):
-   
-    fan_mode.set_mode(int(float(msg)))
-    print(f"Fan mode updated to: {fan_mode.current_mode}")
     print_configuration()
+
 
 def message_arrived_critical_temp(topic, msg):
     global critical_temp
 
-    critical_temp = float(msg)
-    print(f"Critical temperature updated to: {critical_temp}")
-
-    if current_temp >= critical_temp:
-        print_alarm()
-        return
+    print("Message arrived on topic:", topic)
+    print("Payload:", msg)
+    critical_temp = round_to_nearest_half(float(msg))
 
     print_configuration()
-   
 
-def callback_dispatcher(topic, msg):
+
+def message_arrived_fan_mode(topic, msg):
+    global fan_mode
+
+    print("Message arrived on topic:", topic)
+    print("Payload:", msg)
+    fan_mode.current_mode = int(msg)
+
+    print_configuration()
+
+
+def custom_dispatcher(topic, msg):
     if topic == MQTT_TOPIC_MEASURED_TEMP:
         message_arrived_measured_temp(topic, msg)
     elif topic == MQTT_TOPIC_TARGET_TEMP:
         message_arrived_target_temp(topic, msg)
-    elif topic == MQTT_TOPIC_FAN_MODE:
-        message_arrived_fan_mode(topic, msg)
     elif topic == MQTT_TOPIC_CRITICAL_TEMP:
         message_arrived_critical_temp(topic, msg)
-    else:
-        print(f"No callback function defined for topic: {topic}")
+    elif topic == MQTT_TOPIC_FAN_MODE:
+        message_arrived_fan_mode(topic, msg)
 
 
 # Connect to MQTT broker
 CLIENT = simple.MQTTClient(client_id=MQTT_CLIENT_NAME, server=MQTT_SERVER, port=1883)
-CLIENT.set_callback(callback_dispatcher)
 CLIENT.connect()
 
+CLIENT.set_callback(custom_dispatcher)
 
-# Pretplata na teme
 CLIENT.subscribe(MQTT_TOPIC_MEASURED_TEMP)
 CLIENT.subscribe(MQTT_TOPIC_TARGET_TEMP)
-CLIENT.subscribe(MQTT_TOPIC_FAN_MODE)
 CLIENT.subscribe(MQTT_TOPIC_CRITICAL_TEMP)
+CLIENT.subscribe(MQTT_TOPIC_FAN_MODE)
+
 
 def send_data(timer):
     publish = str(fan_mode.get_mode())
@@ -280,21 +284,16 @@ def send_data(timer):
     print("Sent!")
 
 
-def recieve_data(timer):
+def recive_data(timer):
     CLIENT.check_msg()
     CLIENT.check_msg()
     CLIENT.check_msg()
     CLIENT.check_msg()
-
-
-def round_to_nearest_half(value) -> float:
-    return round(value * 2) / 2
 
 
 # Data transfer timers
-SEND_DATA_TIMER = Timer(period=5000, mode=Timer.PERIODIC, callback=send_data)
-RECIVE_DATA_TIMER = Timer(period=500, mode=Timer.PERIODIC, callback=reciesve_data)
-
+SEND_DATA_TIMER = Timer(period=5200, mode=Timer.PERIODIC, callback=send_data)
+RECIVE_DATA_TIMER = Timer(period=1000, mode=Timer.PERIODIC, callback=recive_data)
 
 # Input triggers
 NEXT_MODE_BUTTON.irq(handler=next_mode, trigger=Pin.IRQ_RISING)
