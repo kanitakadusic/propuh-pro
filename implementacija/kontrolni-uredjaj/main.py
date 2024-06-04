@@ -61,6 +61,7 @@ DECRESE_BUTTON = Pin(18, Pin.IN)
 
 
 debounce = 0
+debounce_value_change = 0
 alarm = False
 
 
@@ -70,6 +71,15 @@ def debouncing():
         return False
     else:
         debounce = ticks_ms()
+        return True
+
+
+def value_change_debouncing():
+    global debounce_value_change
+    if ticks_diff(ticks_ms(), debounce_value_change) < DEBOUNCE_TIME_MS:
+        return False
+    else:
+        debounce_value_change = ticks_ms()
         return True
 
 
@@ -109,7 +119,7 @@ def increase_value(pin):
     global critical_temp
     global alarm
 
-    if debouncing() == False:
+    if debouncing() == False or value_change_debouncing() == False:
         return
 
     alarm = False
@@ -130,9 +140,9 @@ def decrease_value(pin):
     global critical_temp
     global alarm
 
-    if debouncing() == False:
+    if debouncing() == False or value_change_debouncing() == False:
         return
-
+    
     alarm = False
 
     if interface_mode.get_mode() == InterfaceMode.TARGET_TEMP_CONFIG:
@@ -151,8 +161,6 @@ def print_alarm():
 
     alarm = True
     alarm_blink_counter = 0
-
-    print("TEMPERATURE\nCRITICAL  " + str(current_temp) + chr(223) + "C")
 
     while alarm_blink_counter <= 5:
         LCD_DISPLAY.clear()
@@ -275,6 +283,8 @@ def message_arrived_fan_mode(topic, msg):
 
 
 def custom_dispatcher(topic, msg):
+    if value_change_debouncing() == False:
+        return
     if topic == MQTT_TOPIC_MEASURED_TEMP:
         message_arrived_measured_temp(topic, msg)
     elif topic == MQTT_TOPIC_TARGET_TEMP:
@@ -319,7 +329,7 @@ def recive_data(timer):
 
 # Data transfer timers
 SEND_DATA_TIMER = Timer(period=5200, mode=Timer.PERIODIC, callback=send_data)
-RECIVE_DATA_TIMER = Timer(period=1000, mode=Timer.PERIODIC, callback=recive_data)
+RECIVE_DATA_TIMER = Timer(period=2000, mode=Timer.PERIODIC, callback=recive_data)
 
 # Input triggers
 NEXT_MODE_BUTTON.irq(handler=next_mode, trigger=Pin.IRQ_RISING)
