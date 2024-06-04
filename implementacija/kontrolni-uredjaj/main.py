@@ -61,6 +61,7 @@ DECRESE_BUTTON = Pin(18, Pin.IN)
 
 
 debounce = 0
+alarm = False
 
 
 def debouncing():
@@ -81,18 +82,23 @@ critical_temp = 35.0
 
 
 def next_mode(pin):
-
+    global alarm
     if debouncing() == False:
         return
+
+    alarm = False
 
     interface_mode.next()
     print_configuration()
 
 
 def previous_mode(pin):
+    global alarm
 
     if debouncing() == False:
         return
+
+    alarm = False
 
     interface_mode.previous()
     print_configuration()
@@ -101,9 +107,12 @@ def previous_mode(pin):
 def increase_value(pin):
     global target_temp
     global critical_temp
+    global alarm
 
     if debouncing() == False:
         return
+
+    alarm = False
 
     if interface_mode.get_mode() == InterfaceMode.TARGET_TEMP_CONFIG:
         if critical_temp - target_temp > MINIMUM_TEMP_DIFFERENCE:
@@ -119,9 +128,12 @@ def increase_value(pin):
 def decrease_value(pin):
     global target_temp
     global critical_temp
+    global alarm
 
     if debouncing() == False:
         return
+
+    alarm = False
 
     if interface_mode.get_mode() == InterfaceMode.TARGET_TEMP_CONFIG:
         target_temp -= 0.5
@@ -134,7 +146,30 @@ def decrease_value(pin):
     print_configuration()
 
 
+def print_alarm():
+    global alarm
+
+    alarm = True
+    alarm_blink_counter = 0
+
+    print("TEMPERATURE\nCRITICAL  " + str(current_temp) + chr(223) + "C")
+
+    while alarm_blink_counter <= 5:
+        LCD_DISPLAY.clear()
+        sleep(0.5)
+        LCD_DISPLAY.putstr(
+            "TEMPERATURE\nCRITICAL  " + str(current_temp) + chr(223) + "C"
+        )
+        sleep(0.8)
+
+        alarm_blink_counter += 1
+
+
 def print_configuration():
+
+    if alarm:
+        return
+
     fan_output = ""
 
     if fan_mode == FanMode.AUTO:
@@ -183,23 +218,6 @@ def print_configuration():
         LCD_DISPLAY.putstr(output)
 
 
-def print_alarm():
-
-    alarm_blink_counter = 0
-
-    print("TEMPERATURE\nCRITICAL  " + str(current_temp) + chr(223) + "C")
-
-    while alarm_blink_counter <= 5:
-        LCD_DISPLAY.clear()
-        sleep(0.5)
-        LCD_DISPLAY.putstr(
-            "TEMPERATURE\nCRITICAL  " + str(current_temp) + chr(223) + "C"
-        )
-        sleep(0.8)
-
-        alarm_blink_counter += 1
-
-
 def message_arrived_measured_temp(topic, msg):
     global current_temp
 
@@ -224,7 +242,7 @@ def message_arrived_target_temp(topic, msg):
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
 
-    if (critical_temp - MINIMUM_TEMP_DIFFERENCE < float(msg)):
+    if critical_temp - MINIMUM_TEMP_DIFFERENCE < float(msg):
         return
 
     target_temp = round_to_nearest_half(float(msg))
@@ -238,9 +256,9 @@ def message_arrived_critical_temp(topic, msg):
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
 
-    if (target_temp + MINIMUM_TEMP_DIFFERENCE > float(msg)):
+    if target_temp + MINIMUM_TEMP_DIFFERENCE > float(msg):
         return
-    
+
     critical_temp = round_to_nearest_half(float(msg))
 
     print_configuration()
@@ -310,6 +328,8 @@ DECRESE_BUTTON.irq(handler=decrease_value, trigger=Pin.IRQ_RISING)
 PREVIOUS_MODE_BUTTON.irq(handler=previous_mode, trigger=Pin.IRQ_RISING)
 
 print_configuration()
+sleep(2)
+print_alarm()
 
 while True:
     pass
