@@ -110,25 +110,22 @@ def toggle_alarm(t):
     global alarm
     if OVERHEATING_LED.value() == 1:
         OVERHEATING_LED.off()
-        # if alarm == 1:
         ALARM_PWM.duty_u16(45000)
     else:
         OVERHEATING_LED.on()
-        # if alarm == 1:
         ALARM_PWM.duty_u16(10000)
 
 
 def turn_alarm_off(pin):
-    global fan_controller, alarm, measured_temp
-    measured_temp = 38
+    global fan_controller, measured_temp
     fan_controller.turn_alarm_off()
-    alarm = 0
     ALARM_PWM.duty_u16(0)
     OVERHEATING_LED.off()
     ALARM_TIMER.deinit()
 
 
 def set_fan_speed(duty_u16):
+    print("brzina=",duty_u16)
     FAN_PWM.duty_u16(duty_u16)
 
 

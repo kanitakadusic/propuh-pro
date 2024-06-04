@@ -63,6 +63,7 @@ DECRESE_BUTTON = Pin(18, Pin.IN)
 debounce = 0
 debounce_value_change = 0
 alarm = False
+alarm_now = False
 
 
 def debouncing():
@@ -86,30 +87,27 @@ def value_change_debouncing():
 # Main program
 fan_mode = FanMode()
 interface_mode = InterfaceMode()
-current_temp = 0.0
-target_temp = 22.0
+current_temp = 22.0
+target_temp = 21.0
 critical_temp = 35.0
 
 
 def next_mode(pin):
-    global alarm
+    global alarm_now, interface_mode
     if debouncing() == False:
         return
-
-    alarm = False
-
+    alarm_now = False
     interface_mode.next()
     print_configuration()
 
 
 def previous_mode(pin):
-    global alarm
+    global alarm_now, interface_mode
 
     if debouncing() == False:
         return
 
-    alarm = False
-
+    alarm_now = False
     interface_mode.previous()
     print_configuration()
 
@@ -117,13 +115,11 @@ def previous_mode(pin):
 def increase_value(pin):
     global target_temp
     global critical_temp
-    global alarm
-
+    global alarm_now
     if debouncing() == False or value_change_debouncing() == False:
         return
 
-    alarm = False
-
+    alarm_now = False
     if interface_mode.get_mode() == InterfaceMode.TARGET_TEMP_CONFIG:
         if critical_temp - target_temp > MINIMUM_TEMP_DIFFERENCE:
             target_temp += 0.5
@@ -138,13 +134,11 @@ def increase_value(pin):
 def decrease_value(pin):
     global target_temp
     global critical_temp
-    global alarm
+    global alarm_now
 
     if debouncing() == False or value_change_debouncing() == False:
         return
-
-    alarm = False
-
+    alarm_now = False
     if interface_mode.get_mode() == InterfaceMode.TARGET_TEMP_CONFIG:
         target_temp -= 0.5
     elif interface_mode.get_mode() == InterfaceMode.CRITICAL_TEMP_CONFIG:
@@ -157,16 +151,17 @@ def decrease_value(pin):
 
 
 def print_alarm():
-    global alarm
+    global alarm, alarm_now
 
     alarm = True
+    alarm_now = True
     alarm_blink_counter = 0
 
-    while alarm_blink_counter <= 5:
+    while alarm_blink_counter <= 5 and alarm_now:
         LCD_DISPLAY.clear()
         sleep(0.5)
         LCD_DISPLAY.putstr(
-            "TEMPERATURE\nCRITICAL  " + str(current_temp) + chr(223) + "C"
+            "TEMPERATURE     CRITICAL: " + str(current_temp) + chr(223) + "C"
         )
         sleep(0.8)
 
@@ -174,8 +169,7 @@ def print_alarm():
 
 
 def print_configuration():
-
-    if alarm:
+    if alarm_now:
         return
 
     fan_output = ""
@@ -198,19 +192,19 @@ def print_configuration():
     current_mode = interface_mode.get_mode()
 
     if current_mode == InterfaceMode.TARGET_TEMP_CONFIG:
-        output = "Target temp:\n" + str(target_temp) + chr(223) + "C"
+        output = "Target temp:    " + str(target_temp) + chr(223) + "C"
         print(output)
         LCD_DISPLAY.clear()
         LCD_DISPLAY.putstr(output)
 
     elif current_mode == InterfaceMode.CRITICAL_TEMP_CONFIG:
-        output = "Critical temp:\n" + str(critical_temp) + chr(223) + "C"
+        output = "Critical temp:  " + str(critical_temp) + chr(223) + "C"
         print(output)
         LCD_DISPLAY.clear()
         LCD_DISPLAY.putstr(output)
 
     elif current_mode == InterfaceMode.FAN_CONFIG:
-        output = "Fan speed:\n" + str(fan_output)
+        output = "Fan speed:      " + str(fan_output)
 
         if fan_mode.get_mode() != FanMode.AUTO:
             output = output + "   " + fan_mode.get_mode_name()
@@ -220,7 +214,7 @@ def print_configuration():
         LCD_DISPLAY.putstr(output)
 
     else:
-        output = "Current temp:\n" + str(current_temp) + chr(223) + "C"
+        output = "Current temp:   " + str(current_temp) + chr(223) + "C"
         print(output)
         LCD_DISPLAY.clear()
         LCD_DISPLAY.putstr(output)
@@ -233,8 +227,11 @@ def message_arrived_measured_temp(topic, msg):
     print("Payload:", msg)
     current_temp = round_to_nearest_half(float(msg))
 
-    if current_temp >= critical_temp:
+    if current_temp >= critical_temp and alarm == False:
         print_alarm()
+        return
+
+    if value_change_debouncing() == False:
         return
 
     print_configuration()
@@ -255,6 +252,9 @@ def message_arrived_target_temp(topic, msg):
 
     target_temp = round_to_nearest_half(float(msg))
 
+    if value_change_debouncing() == False:
+        return
+
     print_configuration()
 
 
@@ -268,7 +268,8 @@ def message_arrived_critical_temp(topic, msg):
         return
 
     critical_temp = round_to_nearest_half(float(msg))
-
+    if value_change_debouncing() == False:
+        return
     print_configuration()
 
 
@@ -279,12 +280,13 @@ def message_arrived_fan_mode(topic, msg):
     print("Payload:", msg)
     fan_mode.current_mode = int(msg)
 
+    if value_change_debouncing() == False:
+        return
     print_configuration()
 
 
 def custom_dispatcher(topic, msg):
-    if value_change_debouncing() == False:
-        return
+
     if topic == MQTT_TOPIC_MEASURED_TEMP:
         message_arrived_measured_temp(topic, msg)
     elif topic == MQTT_TOPIC_TARGET_TEMP:
@@ -328,8 +330,15 @@ def recive_data(timer):
 
 
 # Data transfer timers
-SEND_DATA_TIMER = Timer(period=5200, mode=Timer.PERIODIC, callback=send_data)
-RECIVE_DATA_TIMER = Timer(period=2000, mode=Timer.PERIODIC, callback=recive_data)
+SEND_DATA_TIMER = Timer(period=3000, mode=Timer.PERIODIC, callback=send_data)
+
+
+def bjuti(timer):
+    global RECIVE_DATA_TIMER
+    RECIVE_DATA_TIMER = Timer(period=500, mode=Timer.PERIODIC, callback=recive_data)
+
+
+BJUTI_TAJMER = Timer(period=60000, mode=Timer.ONE_SHOT, callback=bjuti)
 
 # Input triggers
 NEXT_MODE_BUTTON.irq(handler=next_mode, trigger=Pin.IRQ_RISING)

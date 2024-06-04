@@ -113,7 +113,9 @@ class FanSpeedController:
         self.update_current_speed()
 
     def get_speed_percent(self):
-        return self.current_speed / (len(FanMode.VALID_MODES) - 2) # Ovo mozda prepraviti
+        if self.current_speed == 0:
+            return 0.0
+        return (self.current_speed + 1) / (len(FanMode.VALID_MODES) - 1) # Ovo mozda prepraviti
 
     def get_speed_u16(self):
         U16 = 2**16 - 1
