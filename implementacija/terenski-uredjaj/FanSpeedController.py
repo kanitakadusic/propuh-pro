@@ -56,11 +56,13 @@ class FanSpeedController:
         self.working_regions = [(-0.1, 0.05), (0.05, 0.2), (0.2, 0.3), (0.3, 0.5), (0.5, 0.6)] 
 
     def update_current_speed(self):
-        if self.fan_mode.get_mode() != FanMode.AUTO:
-            self.current_speed = self.fan_mode.get_mode()
-            return
         range = self.critical_temp - self.target_temp
         percentage = (self.current_temp - self.target_temp) / range 
+        if self.fan_mode.get_mode() != FanMode.AUTO:
+            self.current_speed = self.fan_mode.get_mode()
+            if percentage >= 1:
+                self.alarm = 1
+            return
         if percentage < self.working_regions[0][0]:
             self.current_speed = 0 #OFF
         elif percentage > self.working_regions[len(self.working_regions) - 1][1]:

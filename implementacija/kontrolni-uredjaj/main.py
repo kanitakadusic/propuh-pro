@@ -142,7 +142,7 @@ def decrease_value(pin):
 
     if debouncing() == False or value_change_debouncing() == False:
         return
-    
+
     alarm = False
 
     if interface_mode.get_mode() == InterfaceMode.TARGET_TEMP_CONFIG:

@@ -11,7 +11,7 @@ WIFI_SSID = "mirza"
 WIFI_PASSWORD = "zakadiju"
 
 # LM35 configuration
-LM35_CALIBRATION_OFFSET = -1790
+LM35_CALIBRATION_OFFSET = -1200
 LM35_NUMBER_OF_SAMPLES = 10
 
 # MQTT configuration
@@ -58,11 +58,12 @@ sample_counter = 0
 alarm = 0
 
 fan_controller = FanSpeedController(22, 30, 22)
-#fan_controller.set_current_temp(32)
+# fan_controller.set_current_temp(32)
 
 
 DEBOUNCE_TIME_MS = 300
 debounce = 0
+
 
 def debouncing():
     global debounce
@@ -71,7 +72,8 @@ def debouncing():
     else:
         debounce = ticks_ms()
         return True
-    
+
+
 def update_system():
     global alarm, fan_controller
     speed = int(fan_controller.get_speed_u16())
@@ -83,6 +85,7 @@ def update_system():
     set_fan_speed(speed)
     update_vu_meter(light)
 
+
 def check_temperature(t):
     global sample_counter, temp_sum, measured_temp, fan_controller
 
@@ -92,54 +95,61 @@ def check_temperature(t):
 
     if sample_counter == LM35_NUMBER_OF_SAMPLES:
         measured_temp = temp_sum / LM35_NUMBER_OF_SAMPLES
+
         sample_counter = 0
         temp_sum = 0
         print("Average temperature=", measured_temp)
         fan_controller.set_current_temp(measured_temp)
         publish = str(measured_temp)
         CLIENT.publish(MQTT_TOPIC_MEASURED_TEMP, publish)
-        
+
         update_system()
+
 
 def toggle_alarm(t):
     global alarm
     if OVERHEATING_LED.value() == 1:
         OVERHEATING_LED.off()
-        if alarm == 1:
-            ALARM_PWM.duty_u16(45000)
+        # if alarm == 1:
+        ALARM_PWM.duty_u16(45000)
     else:
         OVERHEATING_LED.on()
-        if alarm == 1:
-            ALARM_PWM.duty_u16(10000)
+        # if alarm == 1:
+        ALARM_PWM.duty_u16(10000)
+
 
 def turn_alarm_off(pin):
-    global fan_controller, alarm
-
+    global fan_controller, alarm, measured_temp
+    measured_temp = 38
     fan_controller.turn_alarm_off()
     alarm = 0
     ALARM_PWM.duty_u16(0)
     OVERHEATING_LED.off()
-    #ALARM_TIMER.deinit()    
+    ALARM_TIMER.deinit()
+
 
 def set_fan_speed(duty_u16):
     FAN_PWM.duty_u16(duty_u16)
 
+
 def update_vu_meter(number):
     FAN_VU_METER_LEDS.set_value(number)
 
+
 def turn_alarm_on():
-    global ALARM_TIMER, alarm
+    global ALARM_TIMER, alarm, OVERHEATING_LED, ALARM_PWM
     alarm = 1
     OVERHEATING_LED.on()
     ALARM_PWM.duty_u16(3000)
-    ALARM_TIMER = Timer(period = 500, mode = Timer.PERIODIC, callback = toggle_alarm)
+    ALARM_TIMER = Timer(period=500, mode=Timer.PERIODIC, callback=toggle_alarm)
+
 
 def message_arrived_fan_mode(topic, msg):
     global fan_controller
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
     fan_controller.set_mode(FanMode(int(float(msg))))
-    
+
     update_system()
 
 
@@ -148,7 +158,7 @@ def message_arrived_critical_temp(topic, msg):
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
     fan_controller.set_critical_temp(float(msg))
-    
+
     update_system()
 
 
@@ -157,7 +167,7 @@ def message_arrived_target_temp(topic, msg):
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
     fan_controller.set_target_temp(float(msg))
-    
+
     update_system()
 
 
@@ -180,10 +190,12 @@ CLIENT.subscribe(MQTT_TOPIC_FAN_MODE)
 CLIENT.subscribe(MQTT_TOPIC_CRITICAL_TEMP)
 CLIENT.subscribe(MQTT_TOPIC_TARGET_TEMP)
 
+
 def recieve_data(t):
     CLIENT.check_msg()
     CLIENT.check_msg()
     CLIENT.check_msg()
+
 
 def nop(t):
     pass
@@ -192,7 +204,9 @@ def nop(t):
 CHECK_TEMP_TIMER = Timer(period=500, mode=Timer.PERIODIC, callback=check_temperature)
 RECIEVE_DATA_TIMER = Timer(period=1000, mode=Timer.PERIODIC, callback=recieve_data)
 ALARM_OFF_PIN.irq(handler=turn_alarm_off, trigger=Pin.IRQ_RISING)
-ALARM_TIMER = Timer(period = 100, mode = Timer.ONE_SHOT, callback = nop)
+ALARM_TIMER = Timer(period=100, mode=Timer.ONE_SHOT, callback=nop)
+
+# turn_alarm_on()
 
 while True:
     pass
