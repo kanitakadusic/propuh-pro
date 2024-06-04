@@ -46,7 +46,7 @@ class FanMode:
 
 class FanSpeedController:
 
-    def __init__(self, target_temp, critical_temp, current_temp, fan_mode = FanMode(FanMode.AUTO)):
+    def __init__(self, target_temp, critical_temp, current_temp, fan_mode = FanMode(FanMode.OFF)):
         self.target_temp = target_temp
         self.critical_temp = critical_temp
         self.fan_mode = fan_mode
@@ -67,6 +67,7 @@ class FanSpeedController:
             self.current_speed = 3 #FAST
             if percentage >= 1:
                 self.alarm = 1
+                return
         else:
             i = 0
             j = 1
@@ -87,7 +88,7 @@ class FanSpeedController:
                     new_speed += 1
                     j = 0
                 i = (i + 1) % 2
-        print("brzina=",self.current_speed)
+        self.turn_alarm_off()
                 
     def set_mode(self, new_fan_mode):
         self.fan_mode = new_fan_mode
