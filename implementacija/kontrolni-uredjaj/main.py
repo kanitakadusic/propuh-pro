@@ -82,7 +82,7 @@ critical_temp = 35.0
 
 def next_mode(pin):
 
-    if debouncing() == False:
+    if not debouncing():
         return
 
     interface_mode.next()
@@ -91,7 +91,7 @@ def next_mode(pin):
 
 def previous_mode(pin):
 
-    if debouncing() == False:
+    if not debouncing():
         return
 
     interface_mode.previous()
@@ -102,7 +102,7 @@ def increase_value(pin):
     global target_temp
     global critical_temp
 
-    if debouncing() == False:
+    if not debouncing():
         return
 
     if interface_mode.get_mode() == InterfaceMode.TARGET_TEMP_CONFIG:
@@ -117,10 +117,10 @@ def increase_value(pin):
 
 
 def decrease_value(pin):
+
     global target_temp
     global critical_temp
-
-    if debouncing() == False:
+    if not debouncing():
         return
 
     if interface_mode.get_mode() == InterfaceMode.TARGET_TEMP_CONFIG:
@@ -135,6 +135,7 @@ def decrease_value(pin):
 
 
 def print_configuration():
+
     fan_output = ""
 
     if fan_mode == FanMode.AUTO:
@@ -184,7 +185,6 @@ def print_configuration():
 
 
 def print_alarm():
-
     alarm_blink_counter = 0
 
     print("TEMPERATURE\nCRITICAL  " + str(current_temp)+ chr(223) + "C")
@@ -201,6 +201,7 @@ def print_alarm():
 def message_arrived_measured_temp(topic, msg):
     global current_temp
 
+  
     print()
     print()
     print("Message arrived on topic:", topic)
@@ -214,13 +215,43 @@ def message_arrived_measured_temp(topic, msg):
     print_configuration()
 
 
+def message_arrived_target_temp(topic, msg):
+    global target_temp
+    
+    target_temp = float(msg)
+    print(f"Target temperature updated to: {target_temp}")
+    print_configuration()
+   
+
+def message_arrived_fan_mode(topic, msg):
+   
+    fan_mode.set_mode(int(float(msg)))
+    print(f"Fan mode updated to: {fan_mode.current_mode}")
+    print_configuration()
+   
+
+# Dispatcher funkcija koja poziva odgovarajuću funkciju na temelju teme
+def callback_dispatcher(topic, msg):
+    if topic == MQTT_TOPIC_MEASURED_TEMP:
+        message_arrived_measured_temp(topic, msg)
+    elif topic == MQTT_TOPIC_TARGET_TEMP:
+        message_arrived_target_temp(topic, msg)
+    elif topic == MQTT_TOPIC_FAN_MODE:
+        message_arrived_fan_mode(topic, msg)
+    else:
+        print(f"No callback function defined for topic: {topic}")
+
+
 # Connect to MQTT broker
 CLIENT = simple.MQTTClient(client_id=MQTT_CLIENT_NAME, server=MQTT_SERVER, port=1883)
+CLIENT.set_callback(callback_dispatcher)
 CLIENT.connect()
 
-CLIENT.set_callback(message_arrived_measured_temp)
-CLIENT.subscribe(MQTT_TOPIC_MEASURED_TEMP)
 
+# Pretplata na teme
+CLIENT.subscribe(MQTT_TOPIC_MEASURED_TEMP)
+CLIENT.subscribe(MQTT_TOPIC_TARGET_TEMP)
+CLIENT.subscribe(MQTT_TOPIC_FAN_MODE)
 
 def send_data(timer):
     publish = str(fan_mode.get_mode())
@@ -237,6 +268,8 @@ def send_data(timer):
 
 def recive_data(timer):
     CLIENT.check_msg()
+    CLIENT.check_msg()
+    CLIENT.check_msg()
 
 
 def round_to_nearest_half(value) -> float:
@@ -246,6 +279,7 @@ def round_to_nearest_half(value) -> float:
 # Data transfer timers
 SEND_DATA_TIMER = Timer(period=5000, mode=Timer.PERIODIC, callback=send_data)
 RECIVE_DATA_TIMER = Timer(period=500, mode=Timer.PERIODIC, callback=recive_data)
+
 
 # Input triggers
 NEXT_MODE_BUTTON.irq(handler=next_mode, trigger=Pin.IRQ_RISING)

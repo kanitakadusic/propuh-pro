@@ -39,6 +39,9 @@ class FanMode:
 
     def get_mode(self):
         return self.current_mode
+    
+    def set_mode(self, new_fan_mode : int ):
+        self.current_mode = new_fan_mode
 
     def get_mode_name(self):
         return FanMode.MODE_NAMES.get(self.current_mode, "UNKNOWN")
