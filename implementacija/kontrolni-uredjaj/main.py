@@ -328,8 +328,6 @@ DECRESE_BUTTON.irq(handler=decrease_value, trigger=Pin.IRQ_RISING)
 PREVIOUS_MODE_BUTTON.irq(handler=previous_mode, trigger=Pin.IRQ_RISING)
 
 print_configuration()
-sleep(2)
-print_alarm()
 
 while True:
     pass
