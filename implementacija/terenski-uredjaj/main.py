@@ -57,8 +57,8 @@ measured_temp = 0.0
 sample_counter = 0
 alarm = 0
 
-fan_controller = FanSpeedController(20, 30, 22)
-fan_controller.set_current_temp(32)
+fan_controller = FanSpeedController(22, 30, 22)
+#fan_controller.set_current_temp(32)
 
 
 DEBOUNCE_TIME_MS = 300
@@ -76,10 +76,10 @@ def update_system():
     global alarm, fan_controller
     speed = int(fan_controller.get_speed_u16())
     light = int(fan_controller.get_speed_binary())
-    #TODO: Da li se alarm treba sam ugasiti ako se temp vrati u normalu?
     if fan_controller.get_alarm() == 1 and alarm == 0:
-        alarm = 1
         turn_alarm_on()
+    elif fan_controller.get_alarm() == 0 and alarm == 1:
+        turn_alarm_off(ALARM_OFF_PIN)
     set_fan_speed(speed)
     update_vu_meter(light)
 
@@ -94,28 +94,30 @@ def check_temperature(t):
         measured_temp = temp_sum / LM35_NUMBER_OF_SAMPLES
         sample_counter = 0
         temp_sum = 0
-        print("Average temperature= ", measured_temp)
+        print("Average temperature=", measured_temp)
         fan_controller.set_current_temp(measured_temp)
         
         update_system()
 
 def toggle_alarm(t):
+    global alarm
     if OVERHEATING_LED.value() == 1:
         OVERHEATING_LED.off()
-        ALARM_PWM.duty_u16(45000)
+        if alarm == 1:
+            ALARM_PWM.duty_u16(45000)
     else:
         OVERHEATING_LED.on()
-        ALARM_PWM.duty_u16(10000)
+        if alarm == 1:
+            ALARM_PWM.duty_u16(10000)
 
 def turn_alarm_off(pin):
     global fan_controller, alarm
 
     fan_controller.turn_alarm_off()
     alarm = 0
-    #fan_controller.set_current_temp(22)
     ALARM_PWM.duty_u16(0)
     OVERHEATING_LED.off()
-    ALARM_TIMER.deinit()    
+    #ALARM_TIMER.deinit()    
 
 def set_fan_speed(duty_u16):
     FAN_PWM.duty_u16(duty_u16)
@@ -124,11 +126,11 @@ def update_vu_meter(number):
     FAN_VU_METER_LEDS.set_value(number)
 
 def turn_alarm_on():
-    global ALARM_TIMER
+    global ALARM_TIMER, alarm
+    alarm = 1
     OVERHEATING_LED.on()
     ALARM_PWM.duty_u16(3000)
     ALARM_TIMER = Timer(period = 500, mode = Timer.PERIODIC, callback = toggle_alarm)
-    #t.init()
 
 def message_arrived_fan_mode(topic, msg):
     global fan_controller
