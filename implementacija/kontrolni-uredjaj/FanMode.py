@@ -1,3 +1,4 @@
+# Moguća stanja ventilatora
 class FanMode:
     OFF = 0
     SLOW = 1

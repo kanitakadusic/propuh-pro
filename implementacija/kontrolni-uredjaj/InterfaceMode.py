@@ -1,3 +1,4 @@
+# Mogući prikazi na displayu
 class InterfaceMode:
     TARGET_TEMP_CONFIG = 0
     CRITICAL_TEMP_CONFIG = 1
