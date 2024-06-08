@@ -16,9 +16,9 @@ I2C_NUM_COLS = 16
 I2C_BUS = I2C(1, sda=Pin(26), scl=Pin(27), freq=400000)
 LCD_DISPLAY = I2cLcd(I2C_BUS, I2C_ADDR, I2C_NUM_ROWS, I2C_NUM_COLS)
 
-# WiFi konfiguracija 
-WIFI_SSID = "mirza"
-WIFI_PASSWORD = "zakadiju"
+# WiFi konfiguracija
+WIFI_SSID = "Malisevic"
+WIFI_PASSWORD = "Ari_bjelov"
 
 # MQTT konfiguracija
 MQTT_SERVER = "broker.hivemq.com"
@@ -34,7 +34,7 @@ MQTT_TOPIC_MEASURED_TEMP = b"Propuh-Pro/measured_temp"
 print("Connecting to WiFi: ", WIFI_SSID)
 WIFI = network.WLAN(network.STA_IF)
 WIFI.active(True)
-WIFI.config(pm=0xA11140) 
+WIFI.config(pm=0xA11140)
 WIFI.connect(WIFI_SSID, WIFI_PASSWORD)
 
 LCD_DISPLAY.putstr("Connecting...")
@@ -51,7 +51,7 @@ PREVIOUS_MODE_BUTTON = Pin(19, Pin.IN)
 INCREASE_BUTTON = Pin(17, Pin.IN)
 DECRESE_BUTTON = Pin(18, Pin.IN)
 
-    # Dozvoljena razlika željene i kritične temperature
+# Dozvoljena razlika željene i kritične temperature
 MINIMUM_TEMP_DIFFERENCE = 5.0
 
 DEBOUNCE_TIME_MS = 300
@@ -63,9 +63,9 @@ target_temp = 21.0
 critical_temp = 35.0
 
 debounce = 0
-    # Da li se u toku rada programa pojavio alarm
+# Da li se u toku rada programa pojavio alarm
 alarm = False
-    # Da li je trenutno aktivan alarm 
+# Da li je trenutno aktivan alarm
 alarm_now = False
 
 
@@ -77,32 +77,36 @@ def debouncing():
         debounce = ticks_ms()
         return True
 
+
 def next_mode(pin):
     global alarm_now, interface_mode
 
     if debouncing() == False:
         return
-    
+
     # Prekid alarma ukoliko je isti aktiviran
     alarm_now = False
     interface_mode.next()
     print_configuration()
+
 
 def previous_mode(pin):
     global alarm_now, interface_mode
 
     if debouncing() == False:
         return
-    
+
     # Prekid alarma ukoliko je isti aktiviran
     alarm_now = False
     interface_mode.previous()
     print_configuration()
 
+
 def increase_value(pin):
     global target_temp
     global critical_temp
     global alarm_now
+    global SEND_DATA_TIMER
     if debouncing() == False:
         return
 
@@ -118,6 +122,7 @@ def increase_value(pin):
     elif interface_mode.get_mode() == InterfaceMode.FAN_CONFIG:
         fan_mode.next()
 
+    SEND_DATA_TIMER = Timer(period=3000, mode=Timer.ONE_SHOT, callback=send_data)
     print_configuration()
 
 
@@ -125,10 +130,11 @@ def decrease_value(pin):
     global target_temp
     global critical_temp
     global alarm_now
+    global SEND_DATA_TIMER
 
     if debouncing() == False:
         return
-    
+
     # Prekid alarma ukoliko je isti aktiviran
     alarm_now = False
 
@@ -141,7 +147,9 @@ def decrease_value(pin):
     elif interface_mode.get_mode() == InterfaceMode.FAN_CONFIG:
         fan_mode.previous()
 
+    SEND_DATA_TIMER = Timer(period=3000, mode=Timer.ONE_SHOT, callback=send_data)
     print_configuration()
+
 
 # Aktivacija alarma i prikaz upozorenja
 def print_alarm():
@@ -160,6 +168,7 @@ def print_alarm():
         sleep(0.8)
 
         alarm_blink_counter += 1
+
 
 # Ispis informacija na display
 def print_configuration():
@@ -215,9 +224,11 @@ def print_configuration():
         LCD_DISPLAY.clear()
         LCD_DISPLAY.putstr(output)
 
+
 # Korak za temperaturu je 0.5
 def round_to_nearest_half(value) -> float:
     return round(value * 2) / 2
+
 
 # Primljena nova vrijednost izmjerene temperature
 def message_arrived_measured_temp(topic, msg):
@@ -225,14 +236,19 @@ def message_arrived_measured_temp(topic, msg):
 
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
+
+    if current_temp == round_to_nearest_half(float(msg)):
+        return
+
     current_temp = round_to_nearest_half(float(msg))
 
     if current_temp >= critical_temp and alarm == False:
         print_alarm()
         return
-    
+
     if interface_mode.get_mode() == InterfaceMode.OPERATIONAL:
         print_configuration()
+
 
 # Primljena nova vrijednost za fan mode
 def message_arrived_fan_mode(topic, msg):
@@ -240,10 +256,15 @@ def message_arrived_fan_mode(topic, msg):
 
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
+
+    if fan_mode.current_mode == int(msg):
+        return
+
     fan_mode.current_mode = int(msg)
 
     if interface_mode.get_mode() == InterfaceMode.FAN_CONFIG:
         print_configuration()
+
 
 # Filtriranje primljenih poruka
 def custom_dispatcher(topic, msg):
@@ -252,6 +273,7 @@ def custom_dispatcher(topic, msg):
         message_arrived_measured_temp(topic, msg)
     elif topic == MQTT_TOPIC_FAN_MODE:
         message_arrived_fan_mode(topic, msg)
+
 
 # Povezivanje na MQTT broker
 CLIENT = simple.MQTTClient(client_id=MQTT_CLIENT_NAME, server=MQTT_SERVER, port=1883)
@@ -262,6 +284,7 @@ CLIENT.set_callback(custom_dispatcher)
 # Pretplata na teme
 CLIENT.subscribe(MQTT_TOPIC_MEASURED_TEMP)
 CLIENT.subscribe(MQTT_TOPIC_FAN_MODE)
+
 
 # Slanje podataka putem MQTT
 def send_data(timer):
@@ -276,6 +299,7 @@ def send_data(timer):
 
     print("Sent!")
 
+
 # Provjera pristiglih podataka na MQTT
 def recive_data(timer):
     CLIENT.check_msg()
@@ -283,7 +307,7 @@ def recive_data(timer):
 
 
 # Tajmeri za slanje/primanje podataka
-SEND_DATA_TIMER = Timer(period=3000, mode=Timer.PERIODIC, callback=send_data)
+# SEND_DATA_TIMER = Timer(period=3000, mode=Timer.PERIODIC, callback=send_data)
 RECIVE_DATA_TIMER = Timer(period=1000, mode=Timer.PERIODIC, callback=recive_data)
 
 # Postavljanje hardverskih prekida
