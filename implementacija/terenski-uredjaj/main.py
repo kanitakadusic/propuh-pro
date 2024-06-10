@@ -7,8 +7,8 @@ from BusOut import *
 
 
 # WiFi konfiguracija 
-WIFI_SSID = "Haris HotSpot"
-WIFI_PASSWORD = "nope1234"
+WIFI_SSID = "iPhone"
+WIFI_PASSWORD = "spothot123"
 
 # MQTT konfiguracija
 MQTT_SERVER = "broker.hivemq.com"

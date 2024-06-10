@@ -17,8 +17,8 @@ I2C_BUS = I2C(1, sda=Pin(26), scl=Pin(27), freq=400000)
 LCD_DISPLAY = I2cLcd(I2C_BUS, I2C_ADDR, I2C_NUM_ROWS, I2C_NUM_COLS)
 
 # WiFi konfiguracija
-WIFI_SSID = "Haris HotSpot"
-WIFI_PASSWORD = "nope1234"
+WIFI_SSID = "iPhone"
+WIFI_PASSWORD = "spothot123"
 
 # MQTT konfiguracija
 MQTT_SERVER = "broker.hivemq.com"
@@ -59,8 +59,8 @@ DEBOUNCE_TIME_MS = 300
 fan_mode = FanMode()
 interface_mode = InterfaceMode()
 current_temp = 22.0
-target_temp = 21.0
-critical_temp = 35.0
+target_temp = 20.0
+critical_temp = 27.0
 
 debounce = 0
 # Da li se u toku rada programa pojavio alarm
@@ -176,6 +176,7 @@ def print_alarm():
 
         alarm_blink_counter += 1
 
+
 # Ispis informacija na display
 def print_configuration():
 
@@ -243,6 +244,9 @@ def message_arrived_measured_temp(topic, msg):
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
 
+    if current_temp == round_to_nearest_half(float(msg)):
+        return
+
     current_temp = round_to_nearest_half(float(msg))
 
     if current_temp >= critical_temp and alarm == False:
@@ -259,6 +263,9 @@ def message_arrived_fan_mode(topic, msg):
 
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
+
+    if fan_mode.current_mode == int(msg):
+        return
 
     fan_mode.current_mode = int(msg)
 
