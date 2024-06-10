@@ -110,6 +110,10 @@ def increase_value(pin):
     if debouncing() == False:
         return
 
+
+    if interface_mode.get_mode() == InterfaceMode.OPERATIONAL:
+        return
+    
     # Prekid alarma ukoliko je isti aktiviran
     alarm_now = False
 
@@ -133,6 +137,9 @@ def decrease_value(pin):
     global SEND_DATA_TIMER
 
     if debouncing() == False:
+        return
+
+    if interface_mode.get_mode() == InterfaceMode.OPERATIONAL:
         return
 
     # Prekid alarma ukoliko je isti aktiviran
