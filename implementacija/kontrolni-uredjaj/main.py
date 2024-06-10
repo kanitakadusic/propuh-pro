@@ -176,7 +176,6 @@ def print_alarm():
 
         alarm_blink_counter += 1
 
-
 # Ispis informacija na display
 def print_configuration():
 
@@ -244,9 +243,6 @@ def message_arrived_measured_temp(topic, msg):
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
 
-    if current_temp == round_to_nearest_half(float(msg)):
-        return
-
     current_temp = round_to_nearest_half(float(msg))
 
     if current_temp >= critical_temp and alarm == False:
@@ -263,9 +259,6 @@ def message_arrived_fan_mode(topic, msg):
 
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
-
-    if fan_mode.current_mode == int(msg):
-        return
 
     fan_mode.current_mode = int(msg)
 
