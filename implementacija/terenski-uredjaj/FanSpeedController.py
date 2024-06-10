@@ -56,7 +56,7 @@ class FanSpeedController:
         self.current_speed = 0
 
         self.current_temp = current_temp
-        self.alarm = 0
+        self.alarm = False
 
         # Intervali rada za svako stanje ventilatora
         # < -0.1 -> OFF
@@ -80,7 +80,7 @@ class FanSpeedController:
 
             # Ukoliko je željena temperatura veća od kritične pali se alarm
             if percentage >= 1:
-                self.alarm = 1
+                self.alarm = True
             return
         
         if percentage < self.working_regions[0][0]:
@@ -88,7 +88,7 @@ class FanSpeedController:
         elif percentage >= self.working_regions[len(self.working_regions) - 1][1]:
             self.current_speed = 3 #FAST
             if percentage >= 1:
-                self.alarm = 1
+                self.alarm = True
                 return
         else:
             i = 0
@@ -117,13 +117,13 @@ class FanSpeedController:
         self.turn_alarm_off()
 
     # Setteri i getteri za atribute 
-    def set_mode(self, new_fan_mode):
+    def set_fan_mode(self, new_fan_mode):
         self.fan_mode = new_fan_mode
 
         # U svakoj set metodi se ažurira brzina
         self.update_current_speed()
 
-    def get_mode(self):
+    def get_fan_mode(self):
         return self.fan_mode
     
     def set_current_temp(self, new_current_temp):
@@ -139,7 +139,7 @@ class FanSpeedController:
         self.critical_temp = new_critical_temp
         self.update_current_speed()
     
-    def get_alarm(self):
+    def is_alarm(self):
         return self.alarm
     
     # Brzina u postotcima
@@ -158,7 +158,7 @@ class FanSpeedController:
         return U16 * self.get_speed_percent()
     
     # Za prikaz brzine putem LED
-    def get_speed_binary(self):
+    def get_led_binary(self):
         # 0 (OFF) -> 0 upaljenih LED
         # 1 (SLOW) -> 2 upaljene LED
         # 2 (NORMAL) -> 4 upaljene LED
@@ -167,5 +167,5 @@ class FanSpeedController:
     
     #Gašenje alarma
     def turn_alarm_off(self):
-        self.alarm = 0
+        self.alarm = False
 

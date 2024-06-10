@@ -45,7 +45,7 @@ FAN_PWM.freq(500)
 ALARM_PWM = PWM(Pin(27))
 ALARM_PWM.freq(1000)
 
-ALARM_OFF_PIN = Pin(0, Pin.IN)
+ALARM_OFF_BUTTON = Pin(0, Pin.IN)
 
 # LM35 konfiguracija
 LM35_CALIBRATION_OFFSET = -1200
@@ -55,7 +55,7 @@ LM35_SENSOR_PIN = ADC(Pin(28))
 temp_sum = 0.0
 measured_temp = 0.0
 sample_counter = 0
-alarm = 0
+alarm = False
 
 # FanSpeedController sadrži sve neophodne informacije za rad sistema
 fan_controller = FanSpeedController(22, 30, 22)
@@ -78,15 +78,15 @@ def update_system():
 
     # Uzimanje trenutnih podataka unutar kontrolera
     speed = int(fan_controller.get_speed_u16())
-    light = int(fan_controller.get_speed_binary())
+    light = int(fan_controller.get_led_binary())
 
     # Ukoliko se alarm treba upaliti, a prethodno nije bio
-    if fan_controller.get_alarm() == 1 and alarm == 0:
+    if fan_controller.is_alarm() == 1 and alarm == 0:
         turn_alarm_on()
 
     # Ukoliko je alarm upaljen, a treba se ugasiti
-    elif fan_controller.get_alarm() == 0 and alarm == 1:
-        turn_alarm_off(ALARM_OFF_PIN)
+    elif fan_controller.is_alarm() == 0 and alarm == 1:
+        turn_alarm_off(ALARM_OFF_BUTTON)
 
     set_fan_speed(speed)
     update_vu_meter(light)
@@ -150,7 +150,7 @@ def update_vu_meter(number):
 def turn_alarm_on():
     global ALARM_TIMER, alarm, OVERHEATING_LED, ALARM_PWM
 
-    alarm = 1
+    alarm = False
     OVERHEATING_LED.on()
     ALARM_PWM.duty_u16(3000)
 
@@ -163,7 +163,7 @@ def message_arrived_fan_mode(topic, msg):
 
     print("Message arrived on topic:", topic)
     print("Payload:", msg)
-    fan_controller.set_mode(FanMode(int(float(msg))))
+    fan_controller.set_fan_mode(FanMode(int(float(msg))))
 
     update_system()
 
@@ -224,7 +224,7 @@ CHECK_TEMP_TIMER = Timer(period=500, mode=Timer.PERIODIC, callback=check_tempera
 RECIEVE_DATA_TIMER = Timer(period=1000, mode=Timer.PERIODIC, callback=recieve_data)
 
 # Klikom na taster se gasi alarm
-ALARM_OFF_PIN.irq(handler=turn_alarm_off, trigger=Pin.IRQ_RISING)
+ALARM_OFF_BUTTON.irq(handler=turn_alarm_off, trigger=Pin.IRQ_RISING)
 ALARM_TIMER = Timer(period=100, mode=Timer.ONE_SHOT, callback=nop)
 
 while True:

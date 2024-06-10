@@ -331,7 +331,7 @@ def send_data(timer):
     print("Sent!")
 
 # Provjera pristiglih podataka na MQTT
-def recive_data(timer):
+def recieve_data(timer):
     CLIENT.check_msg()
     CLIENT.check_msg()
     CLIENT.check_msg()
@@ -340,7 +340,7 @@ def recive_data(timer):
 
 # Tajmeri za slanje/primanje podataka
 SEND_DATA_TIMER = Timer(period=3000, mode=Timer.PERIODIC, callback=send_data)
-RECIVE_DATA_TIMER = Timer(period=500, mode=Timer.PERIODIC, callback=recive_data)
+RECIEVE_DATA_TIMER = Timer(period=500, mode=Timer.PERIODIC, callback=recieve_data)
 
 # Postavljanje hardverskih prekida
 NEXT_MODE_BUTTON.irq(handler=next_mode, trigger=Pin.IRQ_RISING)
