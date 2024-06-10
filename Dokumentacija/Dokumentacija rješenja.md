@@ -3,7 +3,7 @@
 ## main.py
 
 Zadatak je napraviti koristični interfejs gdje je moguće postaviti željenu temperaturu i brzinu ventilatora za sistem ventilacije.
-Izgled interfejsa prošao je više iteracija. Originalna zamisao je bila interakcija sa dva moda ekrana - operacioni i konfiguracijski mod. Međutim, pokazalo se da je bolje imati ekran za konfiguraciju svake od stakvi.
+Izgled interfejsa prošao je više iteracija. Originalna zamisao je bila interakcija sa dva moda ekrana - operacioni i konfiguracijski mod. Međutim, pokazalo se da je bolje imati ekran za konfiguraciju svake od stavki.
 
 Osnovne stavke koje korisnik konfiguriše su:
 * *Željena temperatura*
@@ -245,7 +245,7 @@ Temperatura se mjeri [LM35](https://www.ti.com/lit/ds/symlink/lm35.pdf) senzorom
 
 Za konkretan LM35 potrebno je odrediti kalibracijsko offset kako bi mjerenje bilo reprezentativno.
 
-Kako očekujemo da se temperatura prostora neće značajno mijenjati u kratkom periodu vremena, korišteno je periodično uzorkovanje od 10 uzoraka. Na osnovu prosječne vrijednosti uzoraka se određuje temperatura. Kalibracijski offset, broj uzoraka i ulazi pin sa A/D konverzijom se konfigurišu u kodu konstantama navedenim ispod
+Kako očekujemo da se temperatura prostora neće značajno mijenjati u kratkom periodu vremena, korišteno je periodično uzorkovanje od 10 uzoraka. Na osnovu prosječne vrijednosti uzoraka se određuje temperatura. Kalibracijski offset, broj uzoraka i ulazni pin sa A/D konverzijom se konfigurišu u kodu konstantama navedenim ispod
 
 ```python
 # LM35 konfiguracija
@@ -478,9 +478,9 @@ def get_mode_name(self) # Dohvati naziv trenutnog moda
 Za enkapsulaciju logike potrebne za određivanje brzine ventilatora na osnovu relevantnih parametara, kreirana je klasa FanSpeedController.
 
 Parametri potrebni za rad ove klase su:
-* target_temo   - double
+* target_temp   - double
 * critical_temp - double
-* current_temo  - double
+* current_temp  - double
 * fan_mode      - FanMode objekt
 
 Ove vrijednosti se ujedno proslijeđuju konstruktoru u navedenom redoslijedu. Za fan_mode je podrazumijevana vrijednost FanMode(FanMode.OFF).
@@ -547,7 +547,7 @@ Za potrebe rada sa nizom LED-ova, uvedena je klasa BusOut.
 
 BusOut omogućujue upravljanjem sa više digitalnih izlaza istovremeno tako što se proslijedi cijeli broj koji predstavlja željeno stanje izlaza.
 
-Primjer instancijranja i postavljanja vrijednosti:
+Primjer instanciranja i postavljanja vrijednosti:
 ```python
 bus_out = BusOut(Pin(16), Pin(17), Pin(18))
 
